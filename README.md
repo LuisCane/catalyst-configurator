@@ -4,6 +4,7 @@
 This script is intended to automate the configuration of Cisco Catalyst switches via Telnet using a terminal access server. As it is writen it will find the model of a switch and match that model with a dictionary file, device-dict.json to get attributes and specs about that model. The config.json has some default configuration settings including host or IP address, port number, config skip, and debug mode. At the end, the script prints the specs of the switch and prompts you to clear the configs and reboot.
 
 ## Installation
+Edit the host in config.json to the host you plan on using the most.
 Make the script executable.
 ```bash
 chmod +x install.sh
@@ -40,3 +41,6 @@ When used with no arguments, the script will follow the default settings in conf
 
 ## Device Dictionary
 At some point I would like to add a function in the script that lets you add devices to the device-dict.json dictionary file when a model is not found in it. As it is now, the script just gets "none" variables and errors out. To add a device to the dictionary, copy the template item and adjust the specs as needed. Be sure to follow json formating.
+
+## Disclaimer
+Telnet is not a secure protocol. All data is transmitted in clear text, including user credentials. Do no use telnet on an unsecured network (like the internet). If you must use telnet, do so on a local (ideally isolated) network. If you must use telnet over the internet, use a VPN at least.
