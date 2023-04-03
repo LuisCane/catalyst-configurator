@@ -4,6 +4,10 @@
 This script is intended to automate the configuration of Cisco Catalyst switches via Telnet using a terminal access server. As it is writen it will find the model of a switch and match that model with a dictionary file, device-dict.json to get attributes and specs about that model. The config.json has some default configuration settings including host or IP address, port number, config skip, and debug mode. At the end, the script prints the specs of the switch and prompts you to clear the configs and reboot.
 
 ## Installation
+Make the script executable.
+```bash
+chmod +x install.sh
+```
 Run the install.sh script.
 ```bash
 ./install.sh
