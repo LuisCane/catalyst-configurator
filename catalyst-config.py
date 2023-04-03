@@ -1,12 +1,6 @@
 #!/usr/bin/env python3
 
-import argparse
-import configparser
-import inspect
-import json
-import re
-import socket
-import telnetlib
+import argparse, configparser, inspect, json, re, socket, telnetlib
 
 # Set user mode
 userMode = "userExec"
