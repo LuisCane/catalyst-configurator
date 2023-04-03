@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import argparse, configparser, inspect, json, re, socket, telnetlib
+import argparse, configparser, inspect, json, os, re, socket, telnetlib
 
 # Set user mode
 userMode = "userExec"
@@ -174,12 +174,19 @@ def get_switch_attributes(model):
     try:
         with open("device-dict.json", "r") as f:
             device_dict = json.load(f)
-    except:
-        with open("~/.bin/catalyst-configurator/device-dict.json", "r") as f:
-            device_dict = json.load(f)
-    else:
-        with open("/opt/catalyst-configurator/device-dict.json", "r") as f:
-            device_dict = json.load(f)
+    except FileNotFoundError:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        try:
+            with open(os.path.join(script_dir, "device-dict.json"), "r") as f:
+                device_dict = json.load(f)
+        except FileNotFoundError:
+            try:
+                home_dir = os.path.expanduser("~")
+                with open(os.path.join(home_dir, ".bin", "catalyst-configurator", "device-dict.json"), "r") as f:
+                    device_dict = json.load(f)
+            except FileNotFoundError:
+                with open("/opt/catalyst-configurator/device-dict.json", "r") as f:
+                    device_dict = json.load(f)
 
     return device_dict.get("switches", {}).get(model, {})
 
@@ -187,12 +194,19 @@ def get_module_attributes(model):
     try:
         with open("device-dict.json", "r") as f:
             device_dict = json.load(f)
-    except:
-        with open("~/.bin/catalyst-config/device-dict.json", "r") as f:
-            device_dict = json.load(f)
-    else:
-        with open("/opt/catalyst-config/device-dict.json", "r") as f:
-            device_dict = json.load(f)
+    except FileNotFoundError:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        try:
+            with open(os.path.join(script_dir, "device-dict.json"), "r") as f:
+                device_dict = json.load(f)
+        except FileNotFoundError:
+            try:
+                home_dir = os.path.expanduser("~")
+                with open(os.path.join(home_dir, ".bin", "catalyst-configurator", "device-dict.json"), "r") as f:
+                    device_dict = json.load(f)
+            except FileNotFoundError:
+                with open("/opt/catalyst-configurator/device-dict.json", "r") as f:
+                    device_dict = json.load(f)
 
     return device_dict.get("modules", {}).get(model, {})
 
@@ -723,12 +737,19 @@ if __name__ == '__main__':
     try:
         with open('config.json') as f:
             config = json.load(f)
-    except:
-        with open('~/.bin/catalyst-configurator/config.json') as f:
-            config = json.load(f)
-    else:
-        with open('/opt/catalyst-configurator/config.json') as f:
-            config = json.load(f)    
+    except FileNotFoundError:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        try:
+            with open(os.path.join(script_dir, 'config.json')) as f:
+                config = json.load(f)
+        except FileNotFoundError:
+            try:
+                home_dir = os.path.expanduser('~')
+                with open(os.path.join(home_dir, '.bin', 'catalyst-configurator', 'config.json')) as f:
+                    config = json.load(f)
+            except FileNotFoundError:
+                with open('/opt/catalyst-configurator/config.json') as f:
+                    config = json.load(f)
 
     parser = argparse.ArgumentParser(description='Configure Cisco Catalyst Switches via Telnet and print Specs.')
     parser.add_argument('--host', dest='host', default=config['default']['host'],
