@@ -242,6 +242,28 @@
         "management": "RJ45 Serial + OOBE",
         "usb": "USB2"
     },
+    "WS-C3650-24PD": {
+        "SpecTagModel": "WS-C3650-24PD-S",
+        "oneGigAccess": 24,
+        "tenGigAccess": 0,
+        "oneGigUplink": 2,
+        "tenGigUplink": 2,
+        "OOBE": true,
+        "OOBE_Speed": "ge",
+        "modularStacking": true,
+        "fixedStacking": false,
+        "modularUplink": false,
+        "fixedUplink": true,
+        "powerOverEthernet": true,
+        "multiLayer": true,
+        "Memory": "4096mb",
+        "Storage": "1536mb",
+        "externalPower": false,
+        "redundantPower": true,
+        "baseprice": "$375",
+        "management": "RJ45 Serial + OOBE",
+        "usb": "USB2"
+    },
     "WS-C3850-48P": {
         "SpecTagModel": "WS-C3850-48F-S",
         "oneGigAccess": 48,
