@@ -1,0 +1,5 @@
+This File serves just to make sure the script is
+being run from the directory it was downloaded with.
+This script uses relative paths for many parts and 
+since I can't assume where the script was downloaded to,
+the script will inform you to run it from its download directory.
