@@ -3,6 +3,6 @@
         "host": "example.com",
         "port": 2001,
         "config": false,
-        "debug": false
+        "debug": true
     }
 }

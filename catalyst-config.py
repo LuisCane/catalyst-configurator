@@ -130,9 +130,15 @@ def getSwitchModel():
         print("Switch Model: ", switchModel)
         return switchModel
     else:
-        switchModel = "Switch-Not-Found"
-        print("Switch Model: ", switchModel)
-        return switchModel
+        modelMatch = re.search(r"WS-C\D?\d{4}\D?\D?-\d{1,2}\D?\D\w?-?\w?", output, re.MULTILINE)
+        if modelMatch:
+            switchModel = modelMatch.group(0).strip()
+            print("Switch Model: ", switchModel)
+            return switchModel
+        else:
+            switchModel = "Switch-Not-Found"
+            print("Switch Model: ", switchModel)
+            return switchModel
 
 def getSwitchIOS():
     debugMode()
@@ -152,7 +158,7 @@ def getSwitchIOS():
     else:
         isIOSXE = False
     if isIOSXE:
-        osImageMatch = re.search(r"Catalyst\sL3\sSwitch\sSoftware\s\W(\w+-\w+-M)\W,\sVersion\s(\d+.\d+.\d+\w+)\sRELEASE\sSOFTWARE", output, re.MULTILINE)
+        osImageMatch = re.search(r"Catalyst\sL3\sSwitch\sSoftware\s\W(\w+-\w+-M)\W,\sVersion\s(\d+.\d+.\d+\w+).?\sRELEASE\sSOFTWARE", output, re.MULTILINE)
     else:
         osImageMatch = re.search(r"Software\s\W(C\D?\d{4}\w?-\w+-\w)\W,\sVersion\s+(\d+\.\d+)\W\d?\d?\W\w+,", output, re.MULTILINE)
     if osImageMatch:
@@ -413,9 +419,40 @@ def configure_switch():
             # Generate the interface range command for stacking switches
             interface_access = f"interface range g1/0/1-{access_ports}\r"
             interface_uplink = f"interface g1/0/{uplink_port}\r"
-        # Configure gigabit stacking switches with fixed ten gig uplink ports.
-        elif tenGigAccess == 0 and tenGigUplink > 0:
+        
+        # Configure gigabit stacking switches with fixed gigabit and 1-gig uplink ports.
+        elif tenGigAccess == 0 and (0 < tenGigUplink < 4) and ("3650" in switchModel):
+            access_ports = (oneGigAccess)
+            uplink_access_ports = (oneGigUplink)
+            uplink_ports = (tenGigUplink + 2)
+            
+            # Generate the interface range command for stacking switches
+            interface_access = f"interface range g1/0/1-{access_ports} ,g1/1/1-{uplink_access_ports}\r"
+            interface_uplink = f"interface range te1/1/3-{uplink_ports}\r"
+
+        # Configure gigabit stacking switches with fixed gigabit and 1-gig uplink ports.
+        elif tenGigAccess == 0 and (0 < tenGigUplink < 4):
             access_ports = (oneGigAccess + (oneGigUplink))
+            module_access_ports = (oneGigUplink)
+            uplink_ports = tenGigUplink
+            
+            # Generate the interface range command for stacking switches
+            interface_access = f"interface range g1/0/1-{access_ports} ,g1/0/1-{module_access_ports}\r"
+            interface_uplink = f"interface range te1/0/1-{uplink_ports}\r"
+        
+        # Configure gigabit stacking switches with fixed ten gig uplink ports.
+        elif (tenGigAccess == 0) and (tenGigUplink == 4) and ("3650" in switchModel):
+            access_ports = (oneGigAccess)
+            uplink_ports = tenGigUplink
+            
+            # Generate the interface range command for stacking switches
+            interface_access = f"interface range g1/0/1-{access_ports}\r"
+            interface_uplink = f"interface range te1/1/1-{uplink_ports}\r"
+    
+
+        # Configure gigabit stacking switches with fixed ten gig uplink ports.
+        elif tenGigAccess == 0 and tenGigUplink == 4:
+            access_ports = (oneGigAccess)
             uplink_ports = tenGigUplink
             
             # Generate the interface range command for stacking switches

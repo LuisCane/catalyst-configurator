@@ -1,7 +1,7 @@
 {
 "switches": {
     "Template-Switch": {
-        "SpecTagModel": "Template-Switch",
+        "specTagModel": "Template-Switch",
         "oneGigAccess": 0,
         "tenGigAccess": 0,
         "oneGigUplink": 0,
@@ -23,7 +23,7 @@
         "usb": "NA"
     },
     "Switch-Not-Found": {
-        "SpecTagModel": "Switch-Not-Found",
+        "specTagModel": "Switch-Not-Found",
         "oneGigAccess": 0,
         "tenGigAccess": 0,
         "oneGigUplink": 0,
@@ -45,7 +45,7 @@
         "usb": "NA"
     },
     "WS-C3750X-12S-S": {
-        "SpecTagModel": "WS-C3750X-12S-S",
+        "specTagModel": "WS-C3750X-12S-S",
         "oneGigAccess": 12,
         "tenGigAccess": 0,
         "oneGigUplink": 0,
@@ -67,7 +67,7 @@
         "usb": "USB2"
     },
     "WS-C3750G-48PS-S": {
-        "SpecTagModel": "WS-C3750G-48PS-S",
+        "specTagModel": "WS-C3750G-48PS-S",
         "oneGigAccess": 48,
         "tenGigAccess": 0,
         "oneGigUplink": 4,
@@ -89,7 +89,7 @@
         "usb": "NA"
     },
     "WS-C3750G-48TS-S": {
-        "SpecTagModel": "WS-C3750G-48TS-S",
+        "specTagModel": "WS-C3750G-48TS-S",
         "oneGigAccess": 48,
         "tenGigAccess": 0,
         "oneGigUplink": 4,
@@ -111,7 +111,7 @@
         "usb": "NA"
     },
     "WS-C3750E-24TD-E": {
-        "SpecTagModel": "WS-C3750E-24TD-E",
+        "specTagModel": "WS-C3750E-24TD-E",
         "oneGigAccess": 24,
         "tenGigAccess": 0,
         "oneGigUplink": 0,
@@ -133,7 +133,7 @@
         "usb": "NA"
     },
     "WS-C3750E-48PD-E": {
-        "SpecTagModel": "WS-C3750E-48PD-E",
+        "specTagModel": "WS-C3750E-48PD-E",
         "oneGigAccess": 48,
         "tenGigAccess": 0,
         "oneGigUplink": 0,
@@ -155,7 +155,7 @@
         "usb": "NA"
     },
     "WS-C3750E-48TD-E": {
-        "SpecTagModel": "WS-C3750E-48TD-E",
+        "specTagModel": "WS-C3750E-48TD-E",
         "oneGigAccess": 48,
         "tenGigAccess": 0,
         "oneGigUplink": 0,
@@ -177,7 +177,7 @@
         "usb": "NA"
     },
     "WS-C2960S-48FPS-S": {
-        "SpecTagModel": "WS-C2960S-48FPS-S",
+        "specTagModel": "WS-C2960S-48FPS-S",
         "oneGigAccess": 48,
         "tenGigAccess": 0,
         "oneGigUplink": 4,
@@ -199,7 +199,7 @@
         "usb": "USB2"
     },
     "WS-C2960G-24PS-S": {
-        "SpecTagModel": "WS-C2960G-24PS-S",
+        "specTagModel": "WS-C2960G-24PS-S",
         "oneGigAccess": 24,
         "tenGigAccess": 0,
         "oneGigUplink": 4,
@@ -221,7 +221,7 @@
         "usb": "NA"
     },
     "WS-C2960XR-24TS-I": {
-        "SpecTagModel": "WS-C2960XR-24TS-I",
+        "specTagModel": "WS-C2960XR-24TS-I",
         "oneGigAccess": 24,
         "tenGigAccess": 0,
         "oneGigUplink": 4,
@@ -243,7 +243,7 @@
         "usb": "USB2"
     },
     "WS-C3650-24PD": {
-        "SpecTagModel": "WS-C3650-24PD-S",
+        "specTagModel": "WS-C3650-24PD-S",
         "oneGigAccess": 24,
         "tenGigAccess": 0,
         "oneGigUplink": 2,
@@ -265,7 +265,7 @@
         "usb": "USB2"
     },
     "WS-C3850-48P": {
-        "SpecTagModel": "WS-C3850-48F-S",
+        "specTagModel": "WS-C3850-48F-S",
         "oneGigAccess": 48,
         "tenGigAccess": 0,
         "oneGigUplink": 0,
@@ -287,7 +287,7 @@
         "usb": "USB2"
     },
     "WS-C3850-48T": {
-        "SpecTagModel": "WS-C3850-48T-S",
+        "specTagModel": "WS-C3850-48T-S",
         "oneGigAccess": 48,
         "tenGigAccess": 0,
         "oneGigUplink": 0,
@@ -311,7 +311,7 @@
 },
 "modules": {
     "Template-Module": {
-        "SpecTagModel": "Template-Module",
+        "specTagModel": "Template-Module",
         "moduleType": "uplink/stack",
         "forSeries": "C0000",
         "oneGigPorts": 0,
@@ -320,7 +320,7 @@
         "modulePrice": "$0"
     },
     "Module-Not-Found": {
-        "SpecTagModel": "Module-Not-Found",
+        "specTagModel": "Module-Not-Found",
         "moduleType": "uplink/stack",
         "forSeries": "C0000",
         "oneGigPorts": 0,
@@ -328,8 +328,17 @@
         "stackPorts": 0,
         "modulePrice": "$0"
     },
+    "800-27645-01": {
+        "specTagModel": "CVR-X2-SFP",
+        "moduleType": "uplink",
+        "forSeries": "C3750E/C3560E",
+        "oneGigPorts": 2,
+        "tenGigPorts": 0,
+        "stackPorts": 0,
+        "modulePrice": "$0"
+    },
     "800-27645-02": {
-        "SpecTagModel": "CVR-X2-SFP",
+        "specTagModel": "CVR-X2-SFP",
         "moduleType": "uplink",
         "forSeries": "C3750E/C3560E",
         "oneGigPorts": 2,
@@ -338,7 +347,7 @@
         "modulePrice": "$0"
     },
     "CVR-X2-SFP": {
-        "SpecTagModel": "CVR-X2-SFP",
+        "specTagModel": "CVR-X2-SFP",
         "moduleType": "uplink",
         "forSeries": "C3750E/C3560E",
         "oneGigPorts": 2,
@@ -347,7 +356,7 @@
         "modulePrice": "$0"
     },
     "X2-10GB-SR": {
-        "SpecTagModel": "X2-10GB-SR",
+        "specTagModel": "X2-10GB-SR",
         "moduleType": "uplink/stack",
         "forSeries": "C3750E/C3560E",
         "oneGigPorts": 0,
@@ -356,7 +365,7 @@
         "modulePrice": "$0"
     },
     "X2-10GB-LR": {
-        "SpecTagModel": "X2-10GB-LR",
+        "specTagModel": "X2-10GB-LR",
         "moduleType": "uplink/stack",
         "forSeries": "C3750E/C3560E",
         "oneGigPorts": 0,
