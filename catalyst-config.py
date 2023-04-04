@@ -510,6 +510,16 @@ def configure_switch():
             interface_uplink = f"interface g1/1/{uplink_port}\r"
         
         # Configure gigabit stacking switches with gigabit/10 gig module installed.
+        elif tenGigAccess == 0 and (0 < tenGigPorts < 4) and ("3850" in switchModel):
+            access_ports = (oneGigAccess)
+            module_access_ports = (oneGigPorts)
+            uplink_ports = (tenGigPorts + 2)
+            
+            # Generate the interface range command for stacking switches
+            interface_access = f"interface range g1/0/1-{access_ports} ,g1/1/1-{module_access_ports}\r"
+            interface_uplink = f"interface range te1/1/3-{uplink_ports}\r"
+
+        # Configure gigabit stacking switches with gigabit/10 gig module installed.
         elif tenGigAccess == 0 and (0 < tenGigPorts < 4):
             access_ports = (oneGigAccess)
             module_access_ports = (oneGigPorts)

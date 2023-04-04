@@ -384,7 +384,7 @@
     "C3850-NM-2-10G": {
         "moduleType": "uplink",
         "forSeries": "C3850",
-        "oneGigPorts": 4,
+        "oneGigPorts": 2,
         "tenGigPorts": 2,
         "stackPorts": 0,
         "modulePrice": "$200"
