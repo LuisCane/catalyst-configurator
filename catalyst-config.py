@@ -24,7 +24,8 @@ def ask_yes_no(prompt):
         else:
             print("Invalid response. Please answer yes or no.")
 
-def initialConnection(host, port):
+def initialConnection(host, port, debug):
+    debugMode(debug)
     # Connect to the AS
     global tn
     try:
@@ -44,8 +45,8 @@ def readPrintOutput(tn, expectedOutput, timeoutSec):
 
 
 
-def waitForBoot():
-    debugMode()
+def waitForBoot(debug):
+    debugMode(debug)
     # Wait for Boot sequence.
     output = tn.read_until(b"Passed", timeout=5).decode("ascii")
     try:
@@ -112,8 +113,8 @@ def waitForBoot():
         input("Press Enter to Continue.")
     print("User mode is: ", userMode)
 
-def getSwitchModel():
-    debugMode()
+def getSwitchModel(debug):
+    debugMode(debug)
     global switchModel
     # Enter show version command and advance through the pages
     tn.write(b"show version\r")
@@ -140,8 +141,8 @@ def getSwitchModel():
             print("Switch Model: ", switchModel)
             return switchModel
 
-def getSwitchIOS():
-    debugMode()
+def getSwitchIOS(debug):
+    debugMode(debug)
     global switchIOS
     # Enter show version command and advance through the pages
     tn.write(b"show version\r")
@@ -216,8 +217,8 @@ def get_module_attributes(model):
 
     return device_dict.get("modules", {}).get(model, {})
 
-def getSwitchInventory():
-    debugMode()
+def getSwitchInventory(debug):
+    debugMode(debug)
     tn.write(b"show inventory\r")
     output = readPrintOutput(tn, b" --more-- ", 2)
     tn.write(b" ")
@@ -226,13 +227,12 @@ def getSwitchInventory():
     output += readPrintOutput(tn, b"Swtich>", 1)
     return output
 
-def collectSwitchInfo():
-    debugMode()
+def collectSwitchInfo(debug):
+    debugMode(debug)
     global switchModel
-    switchModel = getSwitchModel()
+    switchModel = getSwitchModel(debug)
     global switchIOS
-    switchIOS = getSwitchIOS()
-    debugMode()
+    switchIOS = getSwitchIOS(debug)
     attributesSwitch = get_switch_attributes(switchModel)
     global specTagModel
     specTagModel = attributesSwitch.get('specTagModel')
@@ -279,8 +279,8 @@ def collectSwitchInfo():
     global modularSwitch
     modularSwitch = modularStacking or modularUplink
 
-def collectModuleInfo():
-    debugMode()
+def collectModuleInfo(debug):
+    debugMode(debug)
     global installedUplinkMod1
     installedUplinkMod1 = "none"
     global installedUplinkMod2
@@ -366,7 +366,8 @@ def enterConfigMode():
         print("Check User Mode")
         input("Press Enter to continue.")
 
-def commonSwitchConfig():
+def commonSwitchConfig(debug):
+    debugMode(debug)
     if userMode != "globalConfig":
         enterConfigMode()
     # Set line console to logging synchronous
@@ -384,8 +385,8 @@ def commonSwitchConfig():
     tn.write(b"exit\r")
     readPrintOutput(tn, b"Switch(config)#", 1)
 
-def configure_switch():
-    debugMode()
+def configure_switch(debug):
+    debugMode(debug)
     global userMode
     # Determine the interface range command for the access ports
     interface_access = ""
@@ -613,7 +614,8 @@ def configure_switch():
     userMode = "privExec"
 
 
-def config_errdisable():
+def config_errdisable(debug):
+    debugMode(debug)
     global userMode
     if userMode != "globalConfig":
         enterConfigMode()
@@ -668,18 +670,16 @@ def config_errdisable():
     readPrintOutput(tn, b"Switch#", 1)
     userMode = "privExec"
 
-def debugMode():
-    debugModeOn = args.debug
-    #debugMode = True
-    if debugModeOn:
+def debugMode(debug):
+    if debug:
         # Debug Break point
         frame = inspect.currentframe().f_back
         function_name = frame.f_code.co_name
         print(f"\nDebug: called from {function_name}")
         input("Press Enter to continue: ")
 
-def specTagInfo():
-    debugMode()
+def specTagInfo(debug):
+    debugMode(debug)
     print("\nSwitch Information\nSpecs and Features:")
     print("Switch Model: ", specTagModel)
     print("Switch OS Image: ", switchIOS )
@@ -736,7 +736,7 @@ def specTagInfo():
                     print("10 Gig Ports: ", str(tenGigPorts))
                 print("Module Price: ", modulePrice)
 
-def clearConfigReload():
+def clearConfigReload(debug):
     # clear any configs
     tn.write(b"wr er\r\r")
     readPrintOutput(tn, b"Switch#", 1)
@@ -746,38 +746,37 @@ def clearConfigReload():
     tn.write(b"reload\rno\r\r")
     readPrintOutput(tn, b"Switch#", 1)
 
-def closeConnection():
+def closeConnection(debug):
     # Close the connection
     tn.close()
     print("Connection Closed")
 
 
-def main():
-    initialConnection(args.host, args.port)
-    waitForBoot()
-    collectSwitchInfo()
+def main(host, port, no_config, debug):
+    initialConnection(host, port, debug)
+    waitForBoot(debug)
+    collectSwitchInfo(debug)
     if modularSwitch:
-        collectModuleInfo()
-    configMode = args.no_config
-    if configMode == False:
-        commonSwitchConfig()
-        configure_switch()
-        config_errdisable()
-    specTagInfo()
+        collectModuleInfo(debug)
+    if no_config == False:
+        commonSwitchConfig(debug)
+        configure_switch(debug)
+        config_errdisable(debug)
+    specTagInfo(debug)
     if ask_yes_no("Would you like to clear configurations and reload? [y/N]"):
         if userMode == "privExec":
-            clearConfigReload()
+            clearConfigReload(debug)
         elif userMode == "userExec":
             tn.write(b"enable\r")
             readPrintOutput(tn, b"Switch#", 1)
-            clearConfigReload()
+            clearConfigReload(debug)
         else:
             # return to priv exec mode
             tn.write(b"\rend\r")
             readPrintOutput(tn, b"Switch#", 1)
-            clearConfigReload()
+            clearConfigReload(debug)
             
-    closeConnection()
+    closeConnection(debug)
 
 
 if __name__ == '__main__':
@@ -808,5 +807,18 @@ if __name__ == '__main__':
     parser.add_argument('--debug', action='store_true', default=config['default']['debug'],
                         help='Enable Debugging mode.')
     args = parser.parse_args()
-    
-    main()
+
+    # Prompt User for host if none is supplied by arguments or config.json
+    if not args.host:
+        host = input("Enter host name or IP address: ")
+    else:
+        host = args.host
+    # Prompt User for Port number if none is supplied by arguments or config.json
+    if not args.port:
+        port = input("Enter port: ")
+    else:
+        port = args.port
+    no_config = args.no_config
+    debug = args.debug
+
+    main(host, port, no_config, debug)
