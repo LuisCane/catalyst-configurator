@@ -1,5 +1,10 @@
 # Change Log
 
+## 1.1.2
+Adjusted the way function variables and aruments work.
+Added user prompts for missing arguments.
+Minor bug fixes.
+
 ## 1.1.1
 Added install.sh script.
 

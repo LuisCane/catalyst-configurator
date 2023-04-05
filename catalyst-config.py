@@ -244,6 +244,8 @@ def collectSwitchInfo(debug):
     oneGigUplink = attributesSwitch.get('oneGigUplink')
     global tenGigUplink
     tenGigUplink = attributesSwitch.get('tenGigUplink')
+    global tenGigX2
+    tenGigX2 = 0
     global OOBE
     OOBE = attributesSwitch.get('OOBE')
     global OOBE_Speed
@@ -287,10 +289,9 @@ def collectModuleInfo(debug):
     installedUplinkMod2 = "none"
     global uplinkX2
     uplinkX2 = False
-    global tenGigX2
-    tenGigX2 = 0
     if "3750E" in switchModel or "3560E" in switchModel:
         uplinkX2 = True
+        global tenGigX2
         tenGigX2 = 2
     global installedStackMod
     installedStackMod = "none"
@@ -691,7 +692,7 @@ def specTagInfo(debug):
         print("1 Gig Uplink Ports: ", oneGigUplink)
     if tenGigUplink > 0:
         print("10 Gig Uplink Ports: ", tenGigUplink)
-    if uplinkX2:
+    if tenGigX2 > 0:
             print("10 Gig X2 Ports: 2")
     if OOBE:
         print("OOBE")
