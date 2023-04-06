@@ -1,5 +1,8 @@
 # Change Log
 
+## 1.1.3
+Script now presents a warning if a device is not found in the dictionary file and prompts user to update the dictionary file and exits the script.
+
 ## 1.1.2
 Adjusted the way function variables and aruments work.
 Added user prompts for missing arguments.
