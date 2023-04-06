@@ -234,6 +234,9 @@ def collectSwitchInfo(debug):
     global switchIOS
     switchIOS = getSwitchIOS(debug)
     attributesSwitch = get_switch_attributes(switchModel)
+    if not attributesSwitch:
+        print(f"Switch Model not in the dictionary file. Please add this model, {switchModel}, to the device-dict.json file.")
+        quit()
     global specTagModel
     specTagModel = attributesSwitch.get('specTagModel')
     global oneGigAccess
@@ -320,6 +323,8 @@ def collectModuleInfo(debug):
             installedUplinkMod1 = "none"
         else:
             attributesModule = get_module_attributes(installedUplinkMod1)
+            if not attributesModule:
+                print(f"Module Model not in the dictionary file. Please add this model, {installedUplinkMod1}, to the device-dict.json file.")
             moduleType = attributesModule.get('moduleType')
             forSeries = attributesModule.get('forSeries')
             oneGigPorts = attributesModule.get('oneGigPorts')
@@ -331,6 +336,8 @@ def collectModuleInfo(debug):
                 installedUplinkMod2 = "none"
             else:
                 attributesModule = get_module_attributes(installedUplinkMod2)
+                if not attributesModule:
+                    print(f"Module Model not in the dictionary file. Please add this model, {installedUplinkMod2}, to the device-dict.json file.")
                 oneGigPorts += attributesModule.get('oneGigPorts')
                 tenGigPorts += attributesModule.get('tenGigPorts')
     if modularStacking:

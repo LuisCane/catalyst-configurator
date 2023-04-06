@@ -1,7 +1,7 @@
 {
     "default": {
         "host": "",
-        "port": null,
+        "port": 2001,
         "config": false,
         "debug": false
     }

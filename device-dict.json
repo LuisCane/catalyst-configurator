@@ -88,6 +88,28 @@
         "management": "RJ45 Serial",
         "usb": "NA"
     },
+    "WS-C3750G-48TS-E": {
+        "specTagModel": "WS-C3750G-48TS-E",
+        "oneGigAccess": 48,
+        "tenGigAccess": 0,
+        "oneGigUplink": 4,
+        "tenGigUplink": 0,
+        "OOBE": false,
+        "OOBE_Speed": null,
+        "modularStacking": false,
+        "fixedStacking": true,
+        "modularUplink": false,
+        "fixedUplink": true,
+        "powerOverEthernet": false,
+        "multiLayer": true,
+        "Memory": "128mb",
+        "Storage": "32mb",
+        "externalPower": true,
+        "redundantPower": false,
+        "baseprice": "$40",
+        "management": "RJ45 Serial",
+        "usb": "NA"
+    },
     "WS-C3750G-48TS-S": {
         "specTagModel": "WS-C3750G-48TS-S",
         "oneGigAccess": 48,
