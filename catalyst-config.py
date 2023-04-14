@@ -789,9 +789,9 @@ def main(host, port, no_config, debug):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Configure Cisco Catalyst Switches via Telnet and print Specs.')
-    parser.add_argument('--host', dest='host', default="10.1.8.6",
+    parser.add_argument('--host', dest='host', default="",
                         help='the hostname or IP address to connect to')
-    parser.add_argument('--port', dest='port', type=int, default=2003,
+    parser.add_argument('--port', dest='port', type=int, default=2001,
                         help='the TCP port to connect to')
     parser.add_argument('--no-config', action='store_true', default=True,
                         help='Skip Switch Config.')
