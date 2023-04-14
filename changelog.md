@@ -1,5 +1,8 @@
 # Change Log
 
+## 1.1.4
+Removed Config.json and moved default settings to the python script itself.
+
 ## 1.1.3
 Script now presents a warning if a device is not found in the dictionary file and prompts user to update the dictionary file and exits the script.
 

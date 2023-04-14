@@ -316,7 +316,7 @@ def collectModuleInfo(debug):
         else:
             moduleCT = 1
         print("Switch has Modular Uplink Feature.")
-        switchInventory = getSwitchInventory()
+        switchInventory = getSwitchInventory(debug)
         print(switchInventory)
         installedUplinkMod1 = input("If a module is installed, enter the model here or press Enter for none: ").strip()
         if installedUplinkMod1 in [""]:
@@ -342,7 +342,7 @@ def collectModuleInfo(debug):
                 tenGigPorts += attributesModule.get('tenGigPorts')
     if modularStacking:
         print("Switch has Modular Stacking Feature.")
-        switchInventory = getSwitchInventory()
+        switchInventory = getSwitchInventory(debug)
         print(switchInventory)
         installedStackMod = input("If a module is installed, enter the model here or press Enter for none: ").strip()
         if installedStackMod in [""]:
@@ -788,31 +788,14 @@ def main(host, port, no_config, debug):
 
 
 if __name__ == '__main__':
-    try:
-        with open('config.json') as f:
-            config = json.load(f)
-    except FileNotFoundError:
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        try:
-            with open(os.path.join(script_dir, 'config.json')) as f:
-                config = json.load(f)
-        except FileNotFoundError:
-            try:
-                home_dir = os.path.expanduser('~')
-                with open(os.path.join(home_dir, '.bin', 'catalyst-configurator', 'config.json')) as f:
-                    config = json.load(f)
-            except FileNotFoundError:
-                with open('/opt/catalyst-configurator/config.json') as f:
-                    config = json.load(f)
-
     parser = argparse.ArgumentParser(description='Configure Cisco Catalyst Switches via Telnet and print Specs.')
-    parser.add_argument('--host', dest='host', default=config['default']['host'],
+    parser.add_argument('--host', dest='host', default="10.1.8.6",
                         help='the hostname or IP address to connect to')
-    parser.add_argument('--port', dest='port', type=int, default=config['default']['port'],
+    parser.add_argument('--port', dest='port', type=int, default=2003,
                         help='the TCP port to connect to')
-    parser.add_argument('--no-config', action='store_true', default=config['default']['config'],
+    parser.add_argument('--no-config', action='store_true', default=True,
                         help='Skip Switch Config.')
-    parser.add_argument('--debug', action='store_true', default=config['default']['debug'],
+    parser.add_argument('--debug', action='store_true', default=False,
                         help='Enable Debugging mode.')
     args = parser.parse_args()
 
