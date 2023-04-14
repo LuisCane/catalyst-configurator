@@ -793,7 +793,7 @@ if __name__ == '__main__':
                         help='the hostname or IP address to connect to')
     parser.add_argument('--port', dest='port', type=int, default=2001,
                         help='the TCP port to connect to')
-    parser.add_argument('--no-config', action='store_true', default=True,
+    parser.add_argument('--no-config', action='store_true', default=False,
                         help='Skip Switch Config.')
     parser.add_argument('--debug', action='store_true', default=False,
                         help='Enable Debugging mode.')
