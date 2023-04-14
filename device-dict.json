@@ -243,14 +243,14 @@
         "usb": "USB2"
     },
     "WS-C2960S-48TS-S": {
-        "specTagModel": "WS-C2960S-48FPS-S",
+        "specTagModel": "WS-C2960S-48TS-S",
         "oneGigAccess": 48,
         "tenGigAccess": 0,
         "oneGigUplink": 2,
         "tenGigUplink": 0,
         "OOBE": true,
         "OOBE_Speed": "fe",
-        "modularStacking": true,
+        "modularStacking": false,
         "fixedStacking": false,
         "modularUplink": false,
         "fixedUplink": true,
