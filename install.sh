@@ -85,23 +85,23 @@ installAsRoot() {
 }
 
 installAsUser() {
-    echo "Script run as root. Copying Files to ~/.bin"
+    echo "Script run as root. Copying Files to ~/.local/bin"
     if ask "Would you like to proceed? Y"; then
         Proceeding
-        echo "Creating catalyst-configurator directory in ~/.bin/"
-        mkdir -p ~/.bin/catalyst-configurator
-        echo "Copying catalyst-config.py to ~/.bin/catalyst-configurator/"
-        cp ./catalyst-config.py ~/.bin/catalyst-configurator/catalyst-config.py
+        echo "Creating catalyst-configurator directory in ~/.local/bin/"
+        mkdir -p ~/.local/bin/catalyst-configurator
+        echo "Copying catalyst-config.py to ~/.local/bin/catalyst-configurator/"
+        cp ./catalyst-config.py ~/.local/bin/catalyst-configurator/catalyst-config.py
         echo "Making catalyst-config.py executable"
-        chmod +x ~/.bin/catalyst-configurator/catalyst-config.py
-        echo "Copying config.json to ~/.bin/catalyst-configurator/"
-        cp ./config.json ~/.bin/catalyst-configurator/config.json
-        echo "Copying device-dict.json to ~/.bin/catalyst-configurator/"
-        cp ./device-dict.json ~/.bin/catalyst-configurator/device-dict.json
-        echo "Copying README.md to ~/.bin/catalyst-configurator/"
-        cp ./README.md ~/.bin/catalyst-configurator/README.md
-        echo "Copying changelog.md to ~/.bin/catalyst-configurator/"
-        cp ./changelog.md ~/.bin/catalyst-configurator/changelog.md
+        chmod +x ~/.local/bin/catalyst-configurator/catalyst-config.py
+        echo "Copying config.json to ~/.local/bin/catalyst-configurator/"
+        cp ./config.json ~/.local/bin/catalyst-configurator/config.json
+        echo "Copying device-dict.json to ~/.local/bin/catalyst-configurator/"
+        cp ./device-dict.json ~/.local/bin/catalyst-configurator/device-dict.json
+        echo "Copying README.md to ~/.local/bin/catalyst-configurator/"
+        cp ./README.md ~/.local/bin/catalyst-configurator/README.md
+        echo "Copying changelog.md to ~/.local/bin/catalyst-configurator/"
+        cp ./changelog.md ~/.local/bin/catalyst-configurator/changelog.md
     fi
 }
 
