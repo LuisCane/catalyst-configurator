@@ -1,5 +1,8 @@
 # Change Log
 
+## 1.1.5
+Added Default Config Function at the beginning of the script. Changed install path for non-root to .local/bin instead of /bin
+
 ## 1.1.4
 Removed Config.json and moved default settings to the python script itself.
 

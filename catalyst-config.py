@@ -2,6 +2,24 @@
 
 import argparse, configparser, inspect, json, os, re, socket, telnetlib
 
+def defaultConfig(setting):
+    # Default host. String, IP address or Hostname
+    hostDefault = ""
+    # Default Port. Integer
+    portDefault = 2001
+    # Default mode for skipping config. Boolean
+    configDefault = False
+    # Default mode for Debug. Boolean
+    debugDefault = False
+    if setting == "host":
+       return usernameDefault
+    elif setting == "port":
+       return passwordDefault
+    elif setting == "config":
+       return tagsFileDefault
+    elif setting == "debug":
+       return debugDefault
+
 # Set user mode
 userMode = "userExec"
 
@@ -789,13 +807,13 @@ def main(host, port, no_config, debug):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Configure Cisco Catalyst Switches via Telnet and print Specs.')
-    parser.add_argument('--host', dest='host', default="",
+    parser.add_argument('--host', dest='host', default=defaultConfig(setting="host"),
                         help='the hostname or IP address to connect to')
-    parser.add_argument('--port', dest='port', type=int, default=2001,
+    parser.add_argument('--port', dest='port', type=int, default=defaultConfig(setting="port"),
                         help='the TCP port to connect to')
-    parser.add_argument('--no-config', action='store_true', default=False,
+    parser.add_argument('--no-config', action='store_true', default=defaultConfig(setting="config"),
                         help='Skip Switch Config.')
-    parser.add_argument('--debug', action='store_true', default=False,
+    parser.add_argument('--debug', action='store_true', default=defaultConfig(setting="debug"),
                         help='Enable Debugging mode.')
     args = parser.parse_args()
 

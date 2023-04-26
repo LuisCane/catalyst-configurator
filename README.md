@@ -1,7 +1,7 @@
 # Catalyst Configurator
 
 ## Intro
-This script is intended to automate the configuration of Cisco Catalyst switches via Telnet using a terminal access server. As it is writen it will find the model of a switch and match that model with a dictionary file, device-dict.json to get attributes and specs about that model. The default configuration settings including host or IP address, port number, config skip, and debug mode are in the arguements section of the script. At the end, the script prints the specs of the switch and prompts you to clear the configs and reboot.
+This script is intended to automate the configuration of Cisco Catalyst switches via Telnet using a terminal access server. As it is writen it will find the model of a switch and match that model with a dictionary file, device-dict.json to get attributes and specs about that model. The default configuration settings including host or IP address, port number, config skip, and debug mode are in the defaultConfig function at the beginning of the script. At the end, the script prints the specs of the switch and prompts you to clear the configs and reboot.
 
 ## Disclaimer
 Telnet is not a secure protocol. All data is transmitted in clear text, including user credentials. Do no use telnet on an unsecured network (like the internet). If you must use telnet, do so on a local (ideally isolated) network. If you must use telnet over the internet, use a VPN at least.
