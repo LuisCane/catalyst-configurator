@@ -98,6 +98,8 @@ installAsUser() {
         cp ./README.md ~/.local/bin/catalyst-configurator/README.md
         echo "Copying changelog.md to ~/.local/bin/catalyst-configurator/"
         cp ./changelog.md ~/.local/bin/catalyst-configurator/changelog.md
+        echo "Creating Symbolic Link to catalyst-config.py ~/.local/bin/catalyst-config"
+        ln -s ~/.local/bin/catalyst-config/catalyst-config.py ~/.local/bin/catalyst-config
     fi
 }
 
