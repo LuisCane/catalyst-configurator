@@ -6,17 +6,17 @@ def defaultConfig(setting):
     # Default host. String, IP address or Hostname
     hostDefault = ""
     # Default Port. Integer
-    portDefault = 2001
+    portDefault = 23
     # Default mode for skipping config. Boolean
     configDefault = False
     # Default mode for Debug. Boolean
     debugDefault = False
     if setting == "host":
-       return usernameDefault
+       return hostDefault
     elif setting == "port":
-       return passwordDefault
+       return portDefault
     elif setting == "config":
-       return tagsFileDefault
+       return configDefault
     elif setting == "debug":
        return debugDefault
 
