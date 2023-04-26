@@ -71,8 +71,6 @@ installAsRoot() {
         cp ./catalyst-config.py /opt/catalyst-configurator/catalyst-config.py
         echo "Making catalyst-config.py executable"
         chmod +x /opt/catalyst-configurator/catalyst-config.py
-        echo "Copying config.json to /opt/catalyst-configurator/"
-        cp ./config.json /opt/catalyst-configurator/config.json
         echo "Copying device-dict.json to /opt/catalyst-configurator/"
         cp ./device-dict.json /opt/catalyst-configurator/device-dict.json
         echo "Copying README.md to /opt/catalyst-configurator/"
@@ -94,8 +92,6 @@ installAsUser() {
         cp ./catalyst-config.py ~/.local/bin/catalyst-configurator/catalyst-config.py
         echo "Making catalyst-config.py executable"
         chmod +x ~/.local/bin/catalyst-configurator/catalyst-config.py
-        echo "Copying config.json to ~/.local/bin/catalyst-configurator/"
-        cp ./config.json ~/.local/bin/catalyst-configurator/config.json
         echo "Copying device-dict.json to ~/.local/bin/catalyst-configurator/"
         cp ./device-dict.json ~/.local/bin/catalyst-configurator/device-dict.json
         echo "Copying README.md to ~/.local/bin/catalyst-configurator/"
