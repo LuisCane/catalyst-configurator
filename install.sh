@@ -114,19 +114,6 @@ GoodBye() {
     exit
 }
 
-check_exit_status() {
-    if [ $? -eq 0 ]; then
-        printf '\nSuccess\n'
-    else
-        printf '\nError\nThe last command exited with an error.\n'
-        if ask "Exit script?" N; then
-            GoodBye
-        else
-            Proceeding
-        fi
-    fi
-}
-
 main() {
     ScriptDirCheck
     if IsRoot; then
