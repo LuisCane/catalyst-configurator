@@ -370,7 +370,7 @@
         "Storage": "32mb",
         "externalPower": true,
         "redundantPower": false,
-        "baseprice": "$0",
+        "baseprice": "$70",
         "management": "RJ45 Serial",
         "usb": "NA"
     },
