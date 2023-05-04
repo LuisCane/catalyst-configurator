@@ -10,19 +10,17 @@ defaultSettings = {
         # Default host. String, IP address or Hostname
         "host": "10.1.8.1",
         # Default Port. Integer
-        "port": 2001,
+        "port": 22,
         # Default Username. String
-        "username": "networking",
+        "username": "test",
         # Default Password. String
-        "password": "3245",
+        "password": "password123",
         # Kex Algorithm Default. String
         "kexAlgorithm": "diffie-hellman-group1-sha1",
         # Host Key Algorithm Default. String
         "hostKeyAlgorithm": "ssh-rsa",
         # Cipher Algorithm Default. String
         "cipherAlgorithm": "aes256-cbc",
-        # Default mode for skipping config. Boolean
-        "config": False,
         # Default mode for Debug. Boolean
         "debug": True
     }
@@ -49,14 +47,22 @@ def ask_yes_no(prompt):
         else:
             print("Invalid response. Please answer yes or no.")
 
-def initialConnection(host, port, username, password, debug):
+def initialConnection(host, port, username, password, kexAlgorithm, hostKeyAlgorithm, cipherAlgorithm, debug):
     debugMode(debug)
     # Connect to the AS
     global client
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
-        client.connect(hostname=host, port=port, username=username, password=password)
+        client.connect(
+            hostname=host,
+            port=port,
+            username=username,
+            password=password,
+            kex_algorithms=kexAlgorithm,
+            hostkey_algorithms=hostKeyAlgorithm,
+            ciphers=cipherAlgorithm
+        )
     except paramiko.BadHostKeyException:
         print(f"Bad Host Key Exception.")
         exit()
@@ -75,8 +81,8 @@ def debugMode(debug):
         print(f"\nDebug: called from {function_name}")
         input("Press Enter to continue: ")
 
-def main(host, port, username, password, kexAlgorithm, hostKeyAlgorithm, cipherAlgorithm, no_config, debug):
-    initialConnection(host, port, username, password, debug)
+def main(host, port, username, password, kexAlgorithm, hostKeyAlgorithm, cipherAlgorithm, debug):
+    initialConnection(host, port, username, password, kexAlgorithm, hostKeyAlgorithm, cipherAlgorithm, debug)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Configure Cisco Catalyst Switches via Telnet and print Specs.')
@@ -94,8 +100,6 @@ if __name__ == '__main__':
                         help='the ssh Host Key Algorithm')
     parser.add_argument('--cipher', dest='cipherAlgorithm', default=defaultSettings["cipherAlgorithm"],
                         help='the ssh Cipher Algorithm')
-    parser.add_argument('--no-config', action='store_true', default=defaultSettings["config"],
-                        help='Skip Switch Config.')
     parser.add_argument('--debug', action='store_true', default=defaultSettings["debug"],
                         help='Enable Debugging mode.')
     args = parser.parse_args()
@@ -121,7 +125,6 @@ if __name__ == '__main__':
     kexAlgorithm = args.kexAlgorithm
     hostKeyAlgorithm = args.hostKeyAlgorithm
     cipherAlgorithm = args.cipherAlgorithm
-    no_config = args.no_config
     debug = args.debug
 
-    main(host, port, username, password, kexAlgorithm, hostKeyAlgorithm, cipherAlgorithm, no_config, debug)
+    main(host, port, username, password, kexAlgorithm, hostKeyAlgorithm, cipherAlgorithm, debug)
