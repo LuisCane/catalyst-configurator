@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+# SSH Version
 import argparse, configparser, inspect, json, os, re, socket, telnetlib
 
 def defaultConfig(setting):
