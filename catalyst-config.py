@@ -1,24 +1,37 @@
 #!/usr/bin/env python3
 # SSH Version
-import argparse, inspect, json, os, re, socket, telnetlib
 
-def defaultConfig(setting):
-    # Default host. String, IP address or Hostname
-    hostDefault = ""
-    # Default Port. Integer
-    portDefault = 23
-    # Default mode for skipping config. Boolean
-    configDefault = False
-    # Default mode for Debug. Boolean
-    debugDefault = False
-    if setting == "host":
-       return hostDefault
-    elif setting == "port":
-       return portDefault
-    elif setting == "config":
-       return configDefault
-    elif setting == "debug":
-       return debugDefault
+import argparse
+import getpass
+import inspect
+import json
+import os
+import re
+import socket
+
+import paramiko
+
+global defaultSettings
+defaultSettings = {
+        # Default host. String, IP address or Hostname
+        "host": "10.1.8.1",
+        # Default Port. Integer
+        "port": 2001,
+        # Default Username. String
+        "username": "networking",
+        # Default Password. String
+        "password": "3245",
+        # Kex Algorithm Default. String
+        "kexAlgorithm": "diffie-hellman-group1-sha1",
+        # Host Key Algorithm Default. String
+        "hostKeyAlgorithm": "ssh-rsa",
+        # Cipher Algorithm Default. String
+        "cipherAlgorithm": "aes256-cbc",
+        # Default mode for skipping config. Boolean
+        "config": False,
+        # Default mode for Debug. Boolean
+        "debug": True
+    }
 
 # Set user mode
 userMode = "userExec"
@@ -42,19 +55,27 @@ def ask_yes_no(prompt):
         else:
             print("Invalid response. Please answer yes or no.")
 
-def initialConnection(host, port, debug):
+def initialConnection(host, port, username, password, debug):
     debugMode(debug)
     # Connect to the AS
-    global tn
+    global client
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     try:
-        tn = telnetlib.Telnet(host, port)
+        client.connect(hostname=host, port=port, username=username, password=password)
+    except paramiko.BadHostKeyException:
+        print(f"Bad Host Key Exception.")
+        exit()
+    except paramiko.AuthenticationException:
+        print(f"Authentication failed when connecting to {host}.")
+        exit()
     except:
-        print(f"Connection Refused on Port {port}.")
+        print(f"Could not connect to {host}.")
         exit()
 
-def readPrintOutput(tn, expectedOutput, timeoutSec):
+def readPrintOutput(client, expectedOutput, timeoutSec):
     try:
-        output = tn.read_until(expectedOutput, timeout=timeoutSec).decode("ascii")
+        output = client.read_until(expectedOutput, timeout=timeoutSec).decode("ascii")
         print(output)
         return output
     except socket.timeout:
@@ -66,7 +87,7 @@ def readPrintOutput(tn, expectedOutput, timeoutSec):
 def waitForBoot(debug):
     debugMode(debug)
     # Wait for Boot sequence.
-    output = tn.read_until(b"Passed", timeout=5).decode("ascii")
+    output = client.read_until(b"Passed", timeout=5).decode("ascii")
     try:
         print(output.decode("ascii"))
     except:
@@ -74,19 +95,19 @@ def waitForBoot(debug):
     prev_output = output
     same_count = 0
     while same_count < 30:
-        output = tn.read_until(b"Passed", timeout=5).decode("ascii")
-        tn.write(b"\r")
+        output = client.read_until(b"Passed", timeout=5).decode("ascii")
+        client.write(b"\r")
         configDialoguePrompt = "Would you like to enter the initial configuration dialog? [yes/no]:"
         try:
             if configDialoguePrompt in output:
                 same_count = 31
-                tn.write(b"n\r")
+                client.write(b"n\r")
             elif "Switch>" in output:
                 same_count = 31
             elif "Switch#" in output:
                 same_count = 31
             elif "Switch(config)#" in output:
-                tn.write(b"end\r")
+                client.write(b"end\r")
                 same_count = 31
             else:
                 print(output.decode("ascii"))
@@ -94,13 +115,13 @@ def waitForBoot(debug):
         except:
             if configDialoguePrompt in output:
                 same_count = 31
-                tn.write(b"n\r")
+                client.write(b"n\r")
             elif "Switch>" in output:
                 same_count = 31
             elif "Switch#" in output:
                 same_count = 31
             elif "Switch(config)#" in output:
-                tn.write(b"end\r")
+                client.write(b"end\r")
                 same_count = 31
             else:
                 print(output)
@@ -112,9 +133,9 @@ def waitForBoot(debug):
             same_count = 0
     # Send a carriage return signal
     global userMode
-    tn.write(b"\r")
+    client.write(b"\r")
     # Read the output and print it to the console
-    output = tn.read_until(b"Switch>", timeout=2)
+    output = client.read_until(b"Switch>", timeout=2)
     if "Switch>" in output.decode("ascii"):
         print(output.decode("ascii"))
         userMode = "userExec"
@@ -123,7 +144,7 @@ def waitForBoot(debug):
         userMode = "privExec"
     elif "Switch(config)#" in output.decode("ascii"):
         print(output.decode("ascii"))
-        tn.write(b"end\r")
+        client.write(b"end\r")
         userMode = "userExec"
     else:
         print(output.decode("ascii"))
@@ -135,14 +156,14 @@ def getSwitchModel(debug):
     debugMode(debug)
     global switchModel
     # Enter show version command and advance through the pages
-    tn.write(b"show version\r")
-    output = readPrintOutput(tn, b" --More-- ", 1)
-    tn.write(b" ")
-    output += readPrintOutput(tn, b" --More-- ", 1)
-    tn.write(b" ")
-    output += readPrintOutput(tn, b"Switch>", 1)
-    tn.write(b" \r")
-    output += readPrintOutput(tn, b"Switch>", 1)
+    client.write(b"show version\r")
+    output = readPrintOutput(client, b" --More-- ", 1)
+    client.write(b" ")
+    output += readPrintOutput(client, b" --More-- ", 1)
+    client.write(b" ")
+    output += readPrintOutput(client, b"Switch>", 1)
+    client.write(b" \r")
+    output += readPrintOutput(client, b"Switch>", 1)
     modelMatch = re.search(r"WS-C\D?\d{4}\D?\D?-\d{1,2}\D?\D\D?-?\D?\D?$", output, re.MULTILINE)
     if modelMatch:
         switchModel = modelMatch.group(0).strip()
@@ -163,14 +184,14 @@ def getSwitchIOS(debug):
     debugMode(debug)
     global switchIOS
     # Enter show version command and advance through the pages
-    tn.write(b"show version\r")
-    output = readPrintOutput(tn, b" --More-- ", 1)
-    tn.write(b" ")
-    output += readPrintOutput(tn, b" --More-- ", 1)
-    tn.write(b" ")
-    output += readPrintOutput(tn, b"Switch>", 1)
-    tn.write(b" \r")
-    output += readPrintOutput(tn, b"Switch>", 1)
+    client.write(b"show version\r")
+    output = readPrintOutput(client, b" --More-- ", 1)
+    client.write(b" ")
+    output += readPrintOutput(client, b" --More-- ", 1)
+    client.write(b" ")
+    output += readPrintOutput(client, b"Switch>", 1)
+    client.write(b" \r")
+    output += readPrintOutput(client, b"Switch>", 1)
     isIOSXEMatch = re.search(r"(IOS-XE)", output, re.MULTILINE)
     if isIOSXEMatch:
         isIOSXE = True
@@ -237,12 +258,12 @@ def get_module_attributes(model):
 
 def getSwitchInventory(debug):
     debugMode(debug)
-    tn.write(b"show inventory\r")
-    output = readPrintOutput(tn, b" --more-- ", 2)
-    tn.write(b" ")
-    output += readPrintOutput(tn, b" --more-- ", 2)
-    tn.write(b"\r")
-    output += readPrintOutput(tn, b"Swtich>", 1)
+    client.write(b"show inventory\r")
+    output = readPrintOutput(client, b" --more-- ", 2)
+    client.write(b" ")
+    output += readPrintOutput(client, b" --more-- ", 2)
+    client.write(b"\r")
+    output += readPrintOutput(client, b"Swtich>", 1)
     return output
 
 def collectSwitchInfo(debug):
@@ -376,17 +397,17 @@ def enterConfigMode():
     global userMode
     # Enter privileged exec mode "enable"
     if userMode == "userExec":
-        tn.write(b"enable\r")
-        readPrintOutput(tn, b"Switch#", 1)
+        client.write(b"enable\r")
+        readPrintOutput(client, b"Switch#", 1)
         userMode = "privExec"
-        tn.write(b"config terminal\r")
-        readPrintOutput(tn, b"Switch(config)#", 1)
+        client.write(b"config terminal\r")
+        readPrintOutput(client, b"Switch(config)#", 1)
         userMode = "globalConfig"
     elif userMode == "privExec":
         # Enter global config mode
         if userMode == "privExec":
-            tn.write(b"configure terminal\r")
-            readPrintOutput(tn, b"Switch(config)#", 1)
+            client.write(b"configure terminal\r")
+            readPrintOutput(client, b"Switch(config)#", 1)
             userMode = "globalConfig"
     else:
         print("Check User Mode")
@@ -397,19 +418,19 @@ def commonSwitchConfig(debug):
     if userMode != "globalConfig":
         enterConfigMode()
     # Set line console to logging synchronous
-    tn.write(b"line con 0\r")
-    readPrintOutput(tn, b"Switch(config-line)#", 1)   
-    tn.write(b"logg sync\r")
-    readPrintOutput(tn, b"Switch(config-line)#", 1)
-    tn.write(b"exit\r")
+    client.write(b"line con 0\r")
+    readPrintOutput(client, b"Switch(config-line)#", 1)   
+    client.write(b"logg sync\r")
+    readPrintOutput(client, b"Switch(config-line)#", 1)
+    client.write(b"exit\r")
     # Create Vlans
-    readPrintOutput(tn, b"Switch(config)#", 1)
-    tn.write(b"vlan 10\r")
-    readPrintOutput(tn, b"Switch(config-vlan)#", 1)
-    tn.write(b"vlan 108\r")
-    readPrintOutput(tn, b"Switch(config-vlan)#", 1)
-    tn.write(b"exit\r")
-    readPrintOutput(tn, b"Switch(config)#", 1)
+    readPrintOutput(client, b"Switch(config)#", 1)
+    client.write(b"vlan 10\r")
+    readPrintOutput(client, b"Switch(config-vlan)#", 1)
+    client.write(b"vlan 108\r")
+    readPrintOutput(client, b"Switch(config-vlan)#", 1)
+    client.write(b"exit\r")
+    readPrintOutput(client, b"Switch(config)#", 1)
 
 def configure_switch(debug):
     debugMode(debug)
@@ -608,35 +629,35 @@ def configure_switch(debug):
     
     # Configure Management Port
     if OOBE == True:
-        tn.write(interface_OOBE.encode("ascii"))
-        readPrintOutput(tn, b"Switch(config-if)#", 1)
-        tn.write(b"ip address 10.1.8.20 255.255.255.0\r")
-        readPrintOutput(tn, b"Switch(config-if)#", 1)
-        tn.write(b"no shut\r")
-        readPrintOutput(tn, b"Switch(config-if)#", 1)
+        client.write(interface_OOBE.encode("ascii"))
+        readPrintOutput(client, b"Switch(config-if)#", 1)
+        client.write(b"ip address 10.1.8.20 255.255.255.0\r")
+        readPrintOutput(client, b"Switch(config-if)#", 1)
+        client.write(b"no shut\r")
+        readPrintOutput(client, b"Switch(config-if)#", 1)
 
     # Configure Access Ports
-    tn.write(interface_access.encode("ascii"))
-    readPrintOutput(tn, b"Switch(config-if)#", 1)
-    tn.write(b"switchport mode access\r")
-    readPrintOutput(tn, b"Switch(config-if)#", 1)
-    tn.write(b"switchport access vlan 10\r")
-    readPrintOutput(tn, b"Switch(config-if)#", 1)
-    tn.write(b"span portf\r")
-    readPrintOutput(tn, b"Switch(config-if)#", 1)
+    client.write(interface_access.encode("ascii"))
+    readPrintOutput(client, b"Switch(config-if)#", 1)
+    client.write(b"switchport mode access\r")
+    readPrintOutput(client, b"Switch(config-if)#", 1)
+    client.write(b"switchport access vlan 10\r")
+    readPrintOutput(client, b"Switch(config-if)#", 1)
+    client.write(b"span portf\r")
+    readPrintOutput(client, b"Switch(config-if)#", 1)
 
     # Configure Uplink Ports
-    tn.write(interface_uplink.encode("ascii"))
-    readPrintOutput(tn, b"Switch(config-if)#", 1)
+    client.write(interface_uplink.encode("ascii"))
+    readPrintOutput(client, b"Switch(config-if)#", 1)
     if multiLayer and ("3850" not in switchModel and "3650" not in switchModel):
-        tn.write(b"swi tru en do\r")
-        readPrintOutput(tn, b"Switch(config-if)#", 1)
-    tn.write(b"swi mo tru\r")
-    readPrintOutput(tn, b"Switch(config-if)#", 1)
-    tn.write(b"swi tru nat vlan 108\r")
-    readPrintOutput(tn, b"Switch(config-if)#", 1)
-    tn.write(b"end\r")
-    readPrintOutput(tn, b"Switch#", 1)
+        client.write(b"swi tru en do\r")
+        readPrintOutput(client, b"Switch(config-if)#", 1)
+    client.write(b"swi mo tru\r")
+    readPrintOutput(client, b"Switch(config-if)#", 1)
+    client.write(b"swi tru nat vlan 108\r")
+    readPrintOutput(client, b"Switch(config-if)#", 1)
+    client.write(b"end\r")
+    readPrintOutput(client, b"Switch#", 1)
     userMode = "privExec"
 
 
@@ -646,54 +667,54 @@ def config_errdisable(debug):
     if userMode != "globalConfig":
         enterConfigMode()
 
-    tn.write(b"service internal\r")
-    readPrintOutput(tn, b"Switch(config)#", 1)
-    tn.write(b"no errdisable detect cause gbic-invalid\r")
-    readPrintOutput(tn, b"Switch(config)#", 1)
-    tn.write(b"errdisable recovery cause udld\r")
-    readPrintOutput(tn, b"Switch(config)#", 1)
-    tn.write(b"errdisable recovery cause bpduguard\r")
-    readPrintOutput(tn, b"Switch(config)#", 1)
-    tn.write(b"errdisable recovery cause security-violation\r")
-    readPrintOutput(tn, b"Switch(config)#", 1)
-    tn.write(b"errdisable recovery cause pagp-flap\r")
-    readPrintOutput(tn, b"Switch(config)#", 1)
-    tn.write(b"errdisable recovery cause dtp-flap\r")
-    readPrintOutput(tn, b"Switch(config)#", 1)
-    tn.write(b"errdisable recovery cause link-flap\r")
-    readPrintOutput(tn, b"Switch(config)#", 1)
-    tn.write(b"errdisable recovery cause sfp-config-mismatch\r")
-    readPrintOutput(tn, b"Switch(config)#", 1)
-    tn.write(b"errdisable recovery cause gbic-invalid\r")
-    readPrintOutput(tn, b"Switch(config)#", 1)
-    tn.write(b"errdisable recovery cause l2ptguard\r")
-    readPrintOutput(tn, b"Switch(config)#", 1)
-    tn.write(b"errdisable recovery cause psecure-violation\r")
-    readPrintOutput(tn, b"Switch(config)#", 1)
-    tn.write(b"errdisable recovery cause port-mode-failure\r")
-    readPrintOutput(tn, b"Switch(config)#", 1)
-    tn.write(b"errdisable recovery cause dhcp-rate-limit\r")
-    readPrintOutput(tn, b"Switch(config)#", 1)
-    tn.write(b"errdisable recovery cause pppoe-ia-rate-limit\r")
-    readPrintOutput(tn, b"Switch(config)#", 1)
-    tn.write(b"errdisable recovery cause mac-limit\r")
-    readPrintOutput(tn, b"Switch(config)#", 1)
-    tn.write(b"errdisable recovery cause storm-control\r")
-    readPrintOutput(tn, b"Switch(config)#", 1)
-    tn.write(b"errdisable recovery cause inline-power\r")
-    readPrintOutput(tn, b"Switch(config)#", 1)
-    tn.write(b"errdisable recovery cause arp-inspection\r")
-    readPrintOutput(tn, b"Switch(config)#", 1)
-    tn.write(b"errdisable recovery cause loopback\r")
-    readPrintOutput(tn, b"Switch(config)#", 1)
-    tn.write(b"errdisable recovery cause psp\r")
-    readPrintOutput(tn, b"Switch(config)#", 1)
-    tn.write(b"errdisable recovery interval 30\r")
-    readPrintOutput(tn, b"Switch(config)#", 1)
-    tn.write(b"service unsupported-transceiver\r")
-    readPrintOutput(tn, b"Switch(config)#", 1)
-    tn.write(b"end\r")
-    readPrintOutput(tn, b"Switch#", 1)
+    client.write(b"service internal\r")
+    readPrintOutput(client, b"Switch(config)#", 1)
+    client.write(b"no errdisable detect cause gbic-invalid\r")
+    readPrintOutput(client, b"Switch(config)#", 1)
+    client.write(b"errdisable recovery cause udld\r")
+    readPrintOutput(client, b"Switch(config)#", 1)
+    client.write(b"errdisable recovery cause bpduguard\r")
+    readPrintOutput(client, b"Switch(config)#", 1)
+    client.write(b"errdisable recovery cause security-violation\r")
+    readPrintOutput(client, b"Switch(config)#", 1)
+    client.write(b"errdisable recovery cause pagp-flap\r")
+    readPrintOutput(client, b"Switch(config)#", 1)
+    client.write(b"errdisable recovery cause dtp-flap\r")
+    readPrintOutput(client, b"Switch(config)#", 1)
+    client.write(b"errdisable recovery cause link-flap\r")
+    readPrintOutput(client, b"Switch(config)#", 1)
+    client.write(b"errdisable recovery cause sfp-config-mismatch\r")
+    readPrintOutput(client, b"Switch(config)#", 1)
+    client.write(b"errdisable recovery cause gbic-invalid\r")
+    readPrintOutput(client, b"Switch(config)#", 1)
+    client.write(b"errdisable recovery cause l2ptguard\r")
+    readPrintOutput(client, b"Switch(config)#", 1)
+    client.write(b"errdisable recovery cause psecure-violation\r")
+    readPrintOutput(client, b"Switch(config)#", 1)
+    client.write(b"errdisable recovery cause port-mode-failure\r")
+    readPrintOutput(client, b"Switch(config)#", 1)
+    client.write(b"errdisable recovery cause dhcp-rate-limit\r")
+    readPrintOutput(client, b"Switch(config)#", 1)
+    client.write(b"errdisable recovery cause pppoe-ia-rate-limit\r")
+    readPrintOutput(client, b"Switch(config)#", 1)
+    client.write(b"errdisable recovery cause mac-limit\r")
+    readPrintOutput(client, b"Switch(config)#", 1)
+    client.write(b"errdisable recovery cause storm-control\r")
+    readPrintOutput(client, b"Switch(config)#", 1)
+    client.write(b"errdisable recovery cause inline-power\r")
+    readPrintOutput(client, b"Switch(config)#", 1)
+    client.write(b"errdisable recovery cause arp-inspection\r")
+    readPrintOutput(client, b"Switch(config)#", 1)
+    client.write(b"errdisable recovery cause loopback\r")
+    readPrintOutput(client, b"Switch(config)#", 1)
+    client.write(b"errdisable recovery cause psp\r")
+    readPrintOutput(client, b"Switch(config)#", 1)
+    client.write(b"errdisable recovery interval 30\r")
+    readPrintOutput(client, b"Switch(config)#", 1)
+    client.write(b"service unsupported-transceiver\r")
+    readPrintOutput(client, b"Switch(config)#", 1)
+    client.write(b"end\r")
+    readPrintOutput(client, b"Switch#", 1)
     userMode = "privExec"
 
 def debugMode(debug):
@@ -763,23 +784,25 @@ def specTagInfo(debug):
                 print("Module Price: ", modulePrice)
 
 def clearConfigReload(debug):
+    debugMode(debug)
     # clear any configs
-    tn.write(b"wr er\r\r")
-    readPrintOutput(tn, b"Switch#", 1)
+    client.write(b"wr er\r\r")
+    readPrintOutput(client, b"Switch#", 1)
     # delete vlan.dat
-    tn.write(b"delete vlan.dat\r\r\r")
-    readPrintOutput(tn, b"Switch#", 1)
-    tn.write(b"reload\rno\r\r")
-    readPrintOutput(tn, b"Switch#", 1)
+    client.write(b"delete vlan.dat\r\r\r")
+    readPrintOutput(client, b"Switch#", 1)
+    client.write(b"reload\rno\r\r")
+    readPrintOutput(client, b"Switch#", 1)
 
 def closeConnection(debug):
+    debugMode(debug)
     # Close the connection
-    tn.close()
+    client.close()
     print("Connection Closed")
 
 
-def main(host, port, no_config, debug):
-    initialConnection(host, port, debug)
+def main(host, port, username, password, kexAlgorithm, hostKeyAlgorithm, cipherAlgorithm, no_config, debug):
+    initialConnection(host, port, username, password, debug)
     waitForBoot(debug)
     collectSwitchInfo(debug)
     if modularSwitch:
@@ -793,13 +816,13 @@ def main(host, port, no_config, debug):
         if userMode == "privExec":
             clearConfigReload(debug)
         elif userMode == "userExec":
-            tn.write(b"enable\r")
-            readPrintOutput(tn, b"Switch#", 1)
+            client.write(b"enable\r")
+            readPrintOutput(client, b"Switch#", 1)
             clearConfigReload(debug)
         else:
             # return to priv exec mode
-            tn.write(b"\rend\r")
-            readPrintOutput(tn, b"Switch#", 1)
+            client.write(b"\rend\r")
+            readPrintOutput(client, b"Switch#", 1)
             clearConfigReload(debug)
             
     closeConnection(debug)
@@ -807,13 +830,23 @@ def main(host, port, no_config, debug):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Configure Cisco Catalyst Switches via Telnet and print Specs.')
-    parser.add_argument('--host', dest='host', default=defaultConfig(setting="host"),
-                        help='the hostname or IP address to connect to')
-    parser.add_argument('--port', dest='port', type=int, default=defaultConfig(setting="port"),
+    parser.add_argument('--host', dest='host', default=defaultSettings["host"],
+                        help='the Hostname or IP address to connect to')
+    parser.add_argument('--port', dest='port', type=int, default=defaultSettings["port"],
                         help='the TCP port to connect to')
-    parser.add_argument('--no-config', action='store_true', default=defaultConfig(setting="config"),
+    parser.add_argument('--username', dest='username', default=defaultSettings["username"],
+                        help='the Username for SSH')
+    parser.add_argument('--password', dest='password', default=defaultSettings["password"],
+                        help='the Password for SSH')
+    parser.add_argument('--kex', dest='kexAlgorithm', default=defaultSettings["kexAlgorithm"],
+                        help='the ssh Key Exchange Algorithm')
+    parser.add_argument('--hostkey', dest='hostKeyAlgorithm', default=defaultSettings["hostKeyAlgorithm"],
+                        help='the ssh Host Key Algorithm')
+    parser.add_argument('--cipher', dest='cipherAlgorithm', default=defaultSettings["cipherAlgorithm"],
+                        help='the ssh Cipher Algorithm')
+    parser.add_argument('--no-config', action='store_true', default=defaultSettings["config"],
                         help='Skip Switch Config.')
-    parser.add_argument('--debug', action='store_true', default=defaultConfig(setting="debug"),
+    parser.add_argument('--debug', action='store_true', default=defaultSettings["debug"],
                         help='Enable Debugging mode.')
     args = parser.parse_args()
 
@@ -827,7 +860,18 @@ if __name__ == '__main__':
         port = input("Enter port: ")
     else:
         port = args.port
+    if not args.username:
+        username = input("Enter Username: ")
+    else:
+        username = args.username
+    if not args.password:
+        password = getpass.getpass("Enter password: ")
+    else:
+        password = args.password
+    kexAlgorithm = args.kexAlgorithm
+    hostKeyAlgorithm = args.hostKeyAlgorithm
+    cipherAlgorithm = args.cipherAlgorithm
     no_config = args.no_config
     debug = args.debug
 
-    main(host, port, no_config, debug)
+    main(host, port, username, password, kexAlgorithm, hostKeyAlgorithm, cipherAlgorithm, no_config, debug)
