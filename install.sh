@@ -61,45 +61,62 @@ ScriptDirCheck() {
     fi
 }
 
-installAsRoot() {
-    echo "Script run as root. Copying Files to /opt"
+installScript() {
+    echo "Script requires sudo privilege and will install the following packages:"
+    echo "python3.11, paramiko (python ssh module)"
     if ask "Would you like to proceed? Y"; then
         Proceeding
+        echo "Installing requisite packages."
+        sudo apt install -y python3.11
+        python3.11 -m pip install paramiko
+        sudo python3.11 -m pip install paramiko
+        echo "Copying Files to /opt."
         echo "Creating catalyst-configurator directory in /opt"
-        mkdir -p /opt/catalyst-configurator
-        echo "Copying catalyst-config.py to /opt/catalyst-configurator/"
-        cp ./catalyst-config.py /opt/catalyst-configurator/catalyst-config.py
+        sudo mkdir -p /opt/catalyst-configurator
+        if [ -f /opt/catalyst-configurator/catalyst-config.py ]; then
+            if ask "/opt/catalyst-configurator/catalyst-config.py already exists, overwrite?"; then
+                echo "Copying catalyst-config.py to /opt/catalyst-configurator/"
+                sudo cp ./catalyst-config.py /opt/catalyst-configurator/catalyst-config.py
+            fi
+        else
+            echo "Copying catalyst-config.py to /opt/catalyst-configurator/"
+            sudo cp ./catalyst-config.py /opt/catalyst-configurator/catalyst-config.py
+        fi
         echo "Making catalyst-config.py executable"
-        chmod +x /opt/catalyst-configurator/catalyst-config.py
-        echo "Copying device-dict.json to /opt/catalyst-configurator/"
-        cp ./device-dict.json /opt/catalyst-configurator/device-dict.json
-        echo "Copying README.md to /opt/catalyst-configurator/"
-        cp ./README.md /opt/catalyst-configurator/README.md
-        echo "Copying changelog.md to /opt/catalyst-configurator/"
-        cp ./changelog.md /opt/catalyst-configurator/changelog.md
-        echo "Creating Symbolic Link to catalyst-config.py in /usr/bin as catalyst-config"
-        ln -s /opt/catalyst-configurator/catalyst-config.py /usr/bin/catalyst-config
-    fi
-}
-
-installAsUser() {
-    echo "Script run as root. Copying Files to ~/.local/bin"
-    if ask "Would you like to proceed? Y"; then
-        Proceeding
-        echo "Creating catalyst-configurator directory in ~/.local/bin/"
-        mkdir -p ~/.local/bin/catalyst-configurator
-        echo "Copying catalyst-config.py to ~/.local/bin/catalyst-configurator/"
-        cp ./catalyst-config.py ~/.local/bin/catalyst-configurator/catalyst-config.py
-        echo "Making catalyst-config.py executable"
-        chmod +x ~/.local/bin/catalyst-configurator/catalyst-config.py
-        echo "Copying device-dict.json to ~/.local/bin/catalyst-configurator/"
-        cp ./device-dict.json ~/.local/bin/catalyst-configurator/device-dict.json
-        echo "Copying README.md to ~/.local/bin/catalyst-configurator/"
-        cp ./README.md ~/.local/bin/catalyst-configurator/README.md
-        echo "Copying changelog.md to ~/.local/bin/catalyst-configurator/"
-        cp ./changelog.md ~/.local/bin/catalyst-configurator/changelog.md
-        echo "Creating Symbolic Link to catalyst-config.py ~/.local/bin/catalyst-config"
-        ln -s ~/.local/bin/catalyst-config/catalyst-config.py ~/.local/bin/catalyst-config
+        sudo chmod +x /opt/catalyst-configurator/catalyst-config.py
+        if [ -f /opt/catalyst-configurator/catalyst-config.py ]; then
+            if ask "/opt/catalyst-configurator/device-dict.json already exists, overwrite?"; then
+                echo "Copying device-dict.json to /opt/catalyst-configurator/"
+                sudo cp ./device-dict.json /opt/catalyst-configurator/device-dict.json
+            fi
+        else
+            echo "Copying device-dict.json to /opt/catalyst-configurator/"
+            sudo cp ./device-dict.json /opt/catalyst-configurator/device-dict.json
+        fi
+        if [ -f /opt/catalyst-configurator/README.md ]; then
+            if ask "/opt/catalyst-configurator/README.md already exists, overwrite?"; then
+                echo "Copying README.md to /opt/catalyst-configurator/"
+                sudo cp ./README.md /opt/catalyst-configurator/README.md
+            fi
+        else
+            echo "Copying README.md to /opt/catalyst-configurator/"
+            sudo cp ./README.md /opt/catalyst-configurator/README.md
+        fi
+        if [ -f /opt/catalyst-configurator/changelog.md ]; then
+            if ask "/opt/catalyst-configurator/changelog.md already exists, overwrite?"; then
+                echo "Copying changelog.md to /opt/catalyst-configurator/"
+                sudo cp ./changelog.md /opt/catalyst-configurator/changelog.md
+            fi
+        else
+            echo "Copying changelog.md to /opt/catalyst-configurator/"
+            sudo cp ./changelog.md /opt/catalyst-configurator/changelog.md
+        fi
+        if [ -f /usr/bin/catalyst-config ]; then
+            echo "Creating Symbolic Link to catalyst-config.py in /usr/bin as catalyst-config"
+            sudo ln -s /opt/catalyst-configurator/catalyst-config.py /usr/bin/catalyst-config
+        else
+            echo "Symbolic link to catalyst-config.py already exists."
+        fi
     fi
 }
 
@@ -116,11 +133,7 @@ GoodBye() {
 
 main() {
     ScriptDirCheck
-    if IsRoot; then
-        installAsRoot
-    else
-        installAsUser
-    fi
+    installScript
     echo "Installation Completed"
     GoodBye
 }

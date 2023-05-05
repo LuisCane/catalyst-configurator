@@ -1,10 +1,7 @@
-# Catalyst Configurator
+# Catalyst Configurator - SSH
 
 ## Intro
-This script is intended to automate the configuration of Cisco Catalyst switches via Telnet using a terminal access server. As it is writen it will find the model of a switch and match that model with a dictionary file, device-dict.json to get attributes and specs about that model. The default configuration settings including host or IP address, port number, config skip, and debug mode are in the defaultConfig function at the beginning of the script. At the end, the script prints the specs of the switch and prompts you to clear the configs and reboot.
-
-## Disclaimer
-Telnet is not a secure protocol. All data is transmitted in clear text, including user credentials. Do no use telnet on an unsecured network (like the internet). If you must use telnet, do so on a local (ideally isolated) network. If you must use telnet over the internet, use a VPN at least.
+This script is intended to automate the configuration of Cisco Catalyst switches via SSH using a terminal access server. As it is writen it will find the model of a switch and match that model with a dictionary file, device-dict.json to get attributes and specs about that model. The default configuration settings including host or IP address, port number, config skip, and debug mode are in the defaultConfig function at the beginning of the script. At the end, the script prints the specs of the switch and prompts you to clear the configs and reboot.
 
 ## Installation
 Clone this git repository.
@@ -34,17 +31,18 @@ If you run the script as root or with sudo, the script will be installed to ``/o
 You can use ``chmod +x catalyst-config.py`` in Linux to make the script executable or use ``python3 catalyst-config.py``.
 ```bash
 catalyst-config.py --help
-
-usage: catalyst-config.py [-h] [--host HOST] [--port PORT] [--no-config] [--debug]
+usage: catalyst-config.py [-h] [--host HOST] [--port PORT] [--username USERNAME] [--password PASSWORD] [--no-config] [--debug]
 
 Configure Cisco Catalyst Switches via Telnet and print Specs.
 
 options:
-  -h, --help   show this help message and exit
-  --host HOST  the hostname or IP address to connect to
-  --port PORT  the TCP port to connect to
-  --no-config  Skip Switch Config.
-  --debug      Enable Debugging mode.
+  -h, --help           show this help message and exit
+  --host HOST          the Hostname or IP address to connect to
+  --port PORT          the TCP port to connect to
+  --username USERNAME  the Username for SSH
+  --password PASSWORD  the Password for SSH
+  --no-config          Skip Switch Config.
+  --debug              Enable Debugging mode.
 ```
 ``--no-config`` skips the config portion of the script and just prints the specs at the end.
 ``--debug`` activates a function that pauses the script at certain points.
