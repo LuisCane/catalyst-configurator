@@ -7,8 +7,8 @@ import inspect
 import json
 import os
 import re
-import socket
-
+import select
+import time
 import paramiko
 
 global defaultSettings
@@ -18,19 +18,13 @@ defaultSettings = {
         # Default Port. Integer
         "port": 2001,
         # Default Username. String
-        "username": "networking",
+        "username": "test",
         # Default Password. String
-        "password": "3245",
-        # Kex Algorithm Default. String
-        "kexAlgorithm": "diffie-hellman-group1-sha1",
-        # Host Key Algorithm Default. String
-        "hostKeyAlgorithm": "ssh-rsa",
-        # Cipher Algorithm Default. String
-        "cipherAlgorithm": "aes256-cbc",
-        # Default mode for skipping config. Boolean
+        "password": "password123",
+        # Default mode for skipping config. False will configure the switch. Boolean
         "config": False,
         # Default mode for Debug. Boolean
-        "debug": True
+        "debug": False
     }
 
 # Set user mode
@@ -58,11 +52,24 @@ def ask_yes_no(prompt):
 def initialConnection(host, port, username, password, debug):
     debugMode(debug)
     # Connect to the AS
-    global client
-    client = paramiko.SSHClient()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    global ssh
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    
     try:
-        client.connect(hostname=host, port=port, username=username, password=password)
+        ssh.connect(
+            hostname = host,
+            port = port,
+            username = username,
+            password = password,
+            timeout = 10,
+            look_for_keys = False,
+            allow_agent = False
+        )
+        print(f"Successfully connected to {host}.")
+        global channel
+        channel = ssh.invoke_shell()
+
     except paramiko.BadHostKeyException:
         print(f"Bad Host Key Exception.")
         exit()
@@ -73,55 +80,60 @@ def initialConnection(host, port, username, password, debug):
         print(f"Could not connect to {host}.")
         exit()
 
-def readPrintOutput(client, expectedOutput, timeoutSec):
-    try:
-        output = client.read_until(expectedOutput, timeout=timeoutSec).decode("ascii")
-        print(output)
-        return output
-    except socket.timeout:
-        print(f"Timeout waiting for expected output: {expectedOutput}")
-        return ""
+def sendCMD(cmd):
+    channel.send(f"{cmd}")
+    # Read the output and print it to the console
+    time.sleep(.5)
+    output = outputProc()
+    print(output)
+    return output
 
-
+def outputProc(timeout=2):
+    if channel.recv_ready():
+        output = channel.recv(65535).decode("utf-8")
+    else:
+        # Wait for data to become available on the channel
+        if select.select([channel], [], [], timeout)[0]:
+            output = channel.recv(65535).decode("utf-8")
+        else:
+            output = ""
+    return output
 
 def waitForBoot(debug):
     debugMode(debug)
     # Wait for Boot sequence.
-    output = client.read_until(b"Passed", timeout=5).decode("ascii")
-    try:
-        print(output.decode("ascii"))
-    except:
-        print(output)
+    output = outputProc()
+    print(output)
     prev_output = output
     same_count = 0
     while same_count < 30:
-        output = client.read_until(b"Passed", timeout=5).decode("ascii")
-        client.write(b"\r")
+        output = outputProc()
+        output += sendCMD("\r")
         configDialoguePrompt = "Would you like to enter the initial configuration dialog? [yes/no]:"
         try:
             if configDialoguePrompt in output:
                 same_count = 31
-                client.write(b"n\r")
+                sendCMD("n\r")
             elif "Switch>" in output:
                 same_count = 31
             elif "Switch#" in output:
                 same_count = 31
             elif "Switch(config)#" in output:
-                client.write(b"end\r")
+                sendCMD("end\r")
                 same_count = 31
             else:
-                print(output.decode("ascii"))
+                print(output)
                 print("Waiting for boot sequence..." + str(same_count) + "/30")
         except:
             if configDialoguePrompt in output:
                 same_count = 31
-                client.write(b"n\r")
+                sendCMD("n\r")
             elif "Switch>" in output:
                 same_count = 31
             elif "Switch#" in output:
                 same_count = 31
             elif "Switch(config)#" in output:
-                client.write(b"end\r")
+                sendCMD("end\r")
                 same_count = 31
             else:
                 print(output)
@@ -131,23 +143,17 @@ def waitForBoot(debug):
         else:
             prev_output = output
             same_count = 0
-    # Send a carriage return signal
+    # Send a carriage return signal and print the output to the console
     global userMode
-    client.write(b"\r")
-    # Read the output and print it to the console
-    output = client.read_until(b"Switch>", timeout=2)
-    if "Switch>" in output.decode("ascii"):
-        print(output.decode("ascii"))
+    output = sendCMD("\r")
+    if "Switch>" in output:
         userMode = "userExec"
-    elif "Switch#" in output.decode("ascii"):
-        print(output.decode("ascii"))
+    elif "Switch#" in output:
         userMode = "privExec"
-    elif "Switch(config)#" in output.decode("ascii"):
-        print(output.decode("ascii"))
-        client.write(b"end\r")
+    elif "Switch(config)#" in output:
+        sendCMD("end\r")
         userMode = "userExec"
     else:
-        print(output.decode("ascii"))
         print("Check Prompt")
         input("Press Enter to Continue.")
     print("User mode is: ", userMode)
@@ -156,14 +162,9 @@ def getSwitchModel(debug):
     debugMode(debug)
     global switchModel
     # Enter show version command and advance through the pages
-    client.write(b"show version\r")
-    output = readPrintOutput(client, b" --More-- ", 1)
-    client.write(b" ")
-    output += readPrintOutput(client, b" --More-- ", 1)
-    client.write(b" ")
-    output += readPrintOutput(client, b"Switch>", 1)
-    client.write(b" \r")
-    output += readPrintOutput(client, b"Switch>", 1)
+    output = sendCMD("show version\r")
+    output += sendCMD(" ")
+    output += sendCMD(" ")
     modelMatch = re.search(r"WS-C\D?\d{4}\D?\D?-\d{1,2}\D?\D\D?-?\D?\D?$", output, re.MULTILINE)
     if modelMatch:
         switchModel = modelMatch.group(0).strip()
@@ -184,14 +185,10 @@ def getSwitchIOS(debug):
     debugMode(debug)
     global switchIOS
     # Enter show version command and advance through the pages
-    client.write(b"show version\r")
-    output = readPrintOutput(client, b" --More-- ", 1)
-    client.write(b" ")
-    output += readPrintOutput(client, b" --More-- ", 1)
-    client.write(b" ")
-    output += readPrintOutput(client, b"Switch>", 1)
-    client.write(b" \r")
-    output += readPrintOutput(client, b"Switch>", 1)
+    output = sendCMD("show version\r")
+    output += sendCMD(" ")
+    output += sendCMD(" ")
+    output += sendCMD(" ")
     isIOSXEMatch = re.search(r"(IOS-XE)", output, re.MULTILINE)
     if isIOSXEMatch:
         isIOSXE = True
@@ -258,12 +255,9 @@ def get_module_attributes(model):
 
 def getSwitchInventory(debug):
     debugMode(debug)
-    client.write(b"show inventory\r")
-    output = readPrintOutput(client, b" --more-- ", 2)
-    client.write(b" ")
-    output += readPrintOutput(client, b" --more-- ", 2)
-    client.write(b"\r")
-    output += readPrintOutput(client, b"Swtich>", 1)
+    output = sendCMD("show inventory\r")
+    output += sendCMD(" ")
+    output += sendCMD("\r")
     return output
 
 def collectSwitchInfo(debug):
@@ -397,17 +391,14 @@ def enterConfigMode():
     global userMode
     # Enter privileged exec mode "enable"
     if userMode == "userExec":
-        client.write(b"enable\r")
-        readPrintOutput(client, b"Switch#", 1)
+        sendCMD("enable\r")
         userMode = "privExec"
-        client.write(b"config terminal\r")
-        readPrintOutput(client, b"Switch(config)#", 1)
+        sendCMD("config terminal\r")
         userMode = "globalConfig"
     elif userMode == "privExec":
         # Enter global config mode
         if userMode == "privExec":
-            client.write(b"configure terminal\r")
-            readPrintOutput(client, b"Switch(config)#", 1)
+            sendCMD("configure terminal\r")
             userMode = "globalConfig"
     else:
         print("Check User Mode")
@@ -418,19 +409,13 @@ def commonSwitchConfig(debug):
     if userMode != "globalConfig":
         enterConfigMode()
     # Set line console to logging synchronous
-    client.write(b"line con 0\r")
-    readPrintOutput(client, b"Switch(config-line)#", 1)   
-    client.write(b"logg sync\r")
-    readPrintOutput(client, b"Switch(config-line)#", 1)
-    client.write(b"exit\r")
+    sendCMD("line con 0\r")
+    sendCMD("logg sync\r")
+    sendCMD("exit\r")
     # Create Vlans
-    readPrintOutput(client, b"Switch(config)#", 1)
-    client.write(b"vlan 10\r")
-    readPrintOutput(client, b"Switch(config-vlan)#", 1)
-    client.write(b"vlan 108\r")
-    readPrintOutput(client, b"Switch(config-vlan)#", 1)
-    client.write(b"exit\r")
-    readPrintOutput(client, b"Switch(config)#", 1)
+    sendCMD("vlan 10\r")
+    sendCMD("vlan 108\r")
+    sendCMD("exit\r")
 
 def configure_switch(debug):
     debugMode(debug)
@@ -629,35 +614,24 @@ def configure_switch(debug):
     
     # Configure Management Port
     if OOBE == True:
-        client.write(interface_OOBE.encode("ascii"))
-        readPrintOutput(client, b"Switch(config-if)#", 1)
-        client.write(b"ip address 10.1.8.20 255.255.255.0\r")
-        readPrintOutput(client, b"Switch(config-if)#", 1)
-        client.write(b"no shut\r")
-        readPrintOutput(client, b"Switch(config-if)#", 1)
+        sendCMD(interface_OOBE)
+        sendCMD("ip address 10.1.8.20 255.255.255.0\r")
+        sendCMD("no shut\r")
 
     # Configure Access Ports
-    client.write(interface_access.encode("ascii"))
-    readPrintOutput(client, b"Switch(config-if)#", 1)
-    client.write(b"switchport mode access\r")
-    readPrintOutput(client, b"Switch(config-if)#", 1)
-    client.write(b"switchport access vlan 10\r")
-    readPrintOutput(client, b"Switch(config-if)#", 1)
-    client.write(b"span portf\r")
-    readPrintOutput(client, b"Switch(config-if)#", 1)
+    sendCMD(interface_access)
+    sendCMD("switchport mode access\r")
+    sendCMD("switchport access vlan 10\r")
+    sendCMD("span portf\r")
 
     # Configure Uplink Ports
-    client.write(interface_uplink.encode("ascii"))
-    readPrintOutput(client, b"Switch(config-if)#", 1)
+    sendCMD(interface_uplink)
+    outputProc()
     if multiLayer and ("3850" not in switchModel and "3650" not in switchModel):
-        client.write(b"swi tru en do\r")
-        readPrintOutput(client, b"Switch(config-if)#", 1)
-    client.write(b"swi mo tru\r")
-    readPrintOutput(client, b"Switch(config-if)#", 1)
-    client.write(b"swi tru nat vlan 108\r")
-    readPrintOutput(client, b"Switch(config-if)#", 1)
-    client.write(b"end\r")
-    readPrintOutput(client, b"Switch#", 1)
+        sendCMD("swi tru en do\r")
+    sendCMD("swi mo tru\r")
+    sendCMD("swi tru nat vlan 108\r")
+    sendCMD("end\r")
     userMode = "privExec"
 
 
@@ -667,54 +641,30 @@ def config_errdisable(debug):
     if userMode != "globalConfig":
         enterConfigMode()
 
-    client.write(b"service internal\r")
-    readPrintOutput(client, b"Switch(config)#", 1)
-    client.write(b"no errdisable detect cause gbic-invalid\r")
-    readPrintOutput(client, b"Switch(config)#", 1)
-    client.write(b"errdisable recovery cause udld\r")
-    readPrintOutput(client, b"Switch(config)#", 1)
-    client.write(b"errdisable recovery cause bpduguard\r")
-    readPrintOutput(client, b"Switch(config)#", 1)
-    client.write(b"errdisable recovery cause security-violation\r")
-    readPrintOutput(client, b"Switch(config)#", 1)
-    client.write(b"errdisable recovery cause pagp-flap\r")
-    readPrintOutput(client, b"Switch(config)#", 1)
-    client.write(b"errdisable recovery cause dtp-flap\r")
-    readPrintOutput(client, b"Switch(config)#", 1)
-    client.write(b"errdisable recovery cause link-flap\r")
-    readPrintOutput(client, b"Switch(config)#", 1)
-    client.write(b"errdisable recovery cause sfp-config-mismatch\r")
-    readPrintOutput(client, b"Switch(config)#", 1)
-    client.write(b"errdisable recovery cause gbic-invalid\r")
-    readPrintOutput(client, b"Switch(config)#", 1)
-    client.write(b"errdisable recovery cause l2ptguard\r")
-    readPrintOutput(client, b"Switch(config)#", 1)
-    client.write(b"errdisable recovery cause psecure-violation\r")
-    readPrintOutput(client, b"Switch(config)#", 1)
-    client.write(b"errdisable recovery cause port-mode-failure\r")
-    readPrintOutput(client, b"Switch(config)#", 1)
-    client.write(b"errdisable recovery cause dhcp-rate-limit\r")
-    readPrintOutput(client, b"Switch(config)#", 1)
-    client.write(b"errdisable recovery cause pppoe-ia-rate-limit\r")
-    readPrintOutput(client, b"Switch(config)#", 1)
-    client.write(b"errdisable recovery cause mac-limit\r")
-    readPrintOutput(client, b"Switch(config)#", 1)
-    client.write(b"errdisable recovery cause storm-control\r")
-    readPrintOutput(client, b"Switch(config)#", 1)
-    client.write(b"errdisable recovery cause inline-power\r")
-    readPrintOutput(client, b"Switch(config)#", 1)
-    client.write(b"errdisable recovery cause arp-inspection\r")
-    readPrintOutput(client, b"Switch(config)#", 1)
-    client.write(b"errdisable recovery cause loopback\r")
-    readPrintOutput(client, b"Switch(config)#", 1)
-    client.write(b"errdisable recovery cause psp\r")
-    readPrintOutput(client, b"Switch(config)#", 1)
-    client.write(b"errdisable recovery interval 30\r")
-    readPrintOutput(client, b"Switch(config)#", 1)
-    client.write(b"service unsupported-transceiver\r")
-    readPrintOutput(client, b"Switch(config)#", 1)
-    client.write(b"end\r")
-    readPrintOutput(client, b"Switch#", 1)
+    sendCMD("service internal\r")
+    sendCMD("no errdisable detect cause gbic-invalid\r")
+    sendCMD("errdisable recovery cause udld\r")
+    sendCMD("errdisable recovery cause bpduguard\r")
+    sendCMD("errdisable recovery cause security-violation\r")
+    sendCMD("errdisable recovery cause pagp-flap\r")
+    sendCMD("errdisable recovery cause dtp-flap\r")
+    sendCMD("errdisable recovery cause link-flap\r")
+    sendCMD("errdisable recovery cause sfp-config-mismatch\r")
+    sendCMD("errdisable recovery cause gbic-invalid\r")
+    sendCMD("errdisable recovery cause l2ptguard\r")
+    sendCMD("errdisable recovery cause psecure-violationv")
+    sendCMD("errdisable recovery cause port-mode-failure\r")
+    sendCMD("errdisable recovery cause dhcp-rate-limit\r")
+    sendCMD("errdisable recovery cause pppoe-ia-rate-limit\r")
+    sendCMD("errdisable recovery cause mac-limit\r")
+    sendCMD("errdisable recovery cause storm-control\r")
+    sendCMD("errdisable recovery cause inline-power\r")
+    sendCMD("errdisable recovery cause arp-inspection\r")
+    sendCMD("errdisable recovery cause loopback\r")
+    sendCMD("errdisable recovery cause psp\r")
+    sendCMD("errdisable recovery interval 30\r")
+    sendCMD("service unsupported-transceiver\r")
+    sendCMD("end\r")
     userMode = "privExec"
 
 def debugMode(debug):
@@ -722,7 +672,7 @@ def debugMode(debug):
         # Debug Break point
         frame = inspect.currentframe().f_back
         function_name = frame.f_code.co_name
-        print(f"\nDebug: called from {function_name}")
+        print(f"\rDebug: called from {function_name}")
         input("Press Enter to continue: ")
 
 def specTagInfo(debug):
@@ -765,7 +715,7 @@ def specTagInfo(debug):
     print("USB: ", usb)
     print("Base Price: ", baseprice)
     if modularSwitch:
-        print("\nModule Information\n")
+        print("\rModule Information")
         if modularStacking:
             print("Installed Stack Module: ", installedStackMod)
             print("Module Type: ", moduleType)
@@ -786,22 +736,19 @@ def specTagInfo(debug):
 def clearConfigReload(debug):
     debugMode(debug)
     # clear any configs
-    client.write(b"wr er\r\r")
-    readPrintOutput(client, b"Switch#", 1)
+    sendCMD("wr er\r\r")
     # delete vlan.dat
-    client.write(b"delete vlan.dat\r\r\r")
-    readPrintOutput(client, b"Switch#", 1)
-    client.write(b"reload\rno\r\r")
-    readPrintOutput(client, b"Switch#", 1)
+    sendCMD("delete vlan.dat\r\r\r")
+    sendCMD("reload\rno\r\r")
 
 def closeConnection(debug):
     debugMode(debug)
     # Close the connection
-    client.close()
+    channel.close()
     print("Connection Closed")
 
 
-def main(host, port, username, password, kexAlgorithm, hostKeyAlgorithm, cipherAlgorithm, no_config, debug):
+def main(host, port, username, password, no_config, debug):
     initialConnection(host, port, username, password, debug)
     waitForBoot(debug)
     collectSwitchInfo(debug)
@@ -816,13 +763,13 @@ def main(host, port, username, password, kexAlgorithm, hostKeyAlgorithm, cipherA
         if userMode == "privExec":
             clearConfigReload(debug)
         elif userMode == "userExec":
-            client.write(b"enable\r")
-            readPrintOutput(client, b"Switch#", 1)
+            sendCMD("enable\r")
+            outputProc()
             clearConfigReload(debug)
         else:
             # return to priv exec mode
-            client.write(b"\rend\r")
-            readPrintOutput(client, b"Switch#", 1)
+            sendCMD("\rend\r")
+            outputProc()
             clearConfigReload(debug)
             
     closeConnection(debug)
@@ -838,12 +785,6 @@ if __name__ == '__main__':
                         help='the Username for SSH')
     parser.add_argument('--password', dest='password', default=defaultSettings["password"],
                         help='the Password for SSH')
-    parser.add_argument('--kex', dest='kexAlgorithm', default=defaultSettings["kexAlgorithm"],
-                        help='the ssh Key Exchange Algorithm')
-    parser.add_argument('--hostkey', dest='hostKeyAlgorithm', default=defaultSettings["hostKeyAlgorithm"],
-                        help='the ssh Host Key Algorithm')
-    parser.add_argument('--cipher', dest='cipherAlgorithm', default=defaultSettings["cipherAlgorithm"],
-                        help='the ssh Cipher Algorithm')
     parser.add_argument('--no-config', action='store_true', default=defaultSettings["config"],
                         help='Skip Switch Config.')
     parser.add_argument('--debug', action='store_true', default=defaultSettings["debug"],
@@ -868,10 +809,7 @@ if __name__ == '__main__':
         password = getpass.getpass("Enter password: ")
     else:
         password = args.password
-    kexAlgorithm = args.kexAlgorithm
-    hostKeyAlgorithm = args.hostKeyAlgorithm
-    cipherAlgorithm = args.cipherAlgorithm
     no_config = args.no_config
     debug = args.debug
 
-    main(host, port, username, password, kexAlgorithm, hostKeyAlgorithm, cipherAlgorithm, no_config, debug)
+    main(host, port, username, password, no_config, debug)
