@@ -8,21 +8,15 @@ import paramiko
 global defaultSettings
 defaultSettings = {
         # Default host. String, IP address or Hostname
-        "host": "10.1.8.1",
+        "host": "192.168.0.194",
         # Default Port. Integer
         "port": 22,
         # Default Username. String
         "username": "test",
         # Default Password. String
         "password": "password123",
-        # Kex Algorithm Default. String
-        "kexAlgorithm": "diffie-hellman-group1-sha1",
-        # Host Key Algorithm Default. String
-        "hostKeyAlgorithm": "ssh-rsa",
-        # Cipher Algorithm Default. String
-        "cipherAlgorithm": "aes256-cbc",
         # Default mode for Debug. Boolean
-        "debug": True
+        "debug": False
     }
 
 # Set user mode
@@ -47,22 +41,22 @@ def ask_yes_no(prompt):
         else:
             print("Invalid response. Please answer yes or no.")
 
-def initialConnection(host, port, username, password, kexAlgorithm, hostKeyAlgorithm, cipherAlgorithm, debug):
+def initialConnection(host, port, username, password, debug):
     debugMode(debug)
     # Connect to the AS
     global client
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    
     try:
         client.connect(
             hostname=host,
             port=port,
             username=username,
             password=password,
-            kex_algorithms=kexAlgorithm,
-            hostkey_algorithms=hostKeyAlgorithm,
-            ciphers=cipherAlgorithm
+            timeout = 10
         )
+        print(f"Successfully connected to {host}.")
     except paramiko.BadHostKeyException:
         print(f"Bad Host Key Exception.")
         exit()
@@ -73,6 +67,14 @@ def initialConnection(host, port, username, password, kexAlgorithm, hostKeyAlgor
         print(f"Could not connect to {host}.")
         exit()
 
+def runCMD(command):
+    stdin, stdout, stderr = client.exec_command(f'{command}')
+    output = stdout.read().decode('utf-8')
+    error = stderr.read().decode('utf-8')
+    if error:
+        print(f"Error running command '{command}': {error}")
+    return output
+
 def debugMode(debug):
     if debug:
         # Debug Break point
@@ -81,8 +83,19 @@ def debugMode(debug):
         print(f"\nDebug: called from {function_name}")
         input("Press Enter to continue: ")
 
-def main(host, port, username, password, kexAlgorithm, hostKeyAlgorithm, cipherAlgorithm, debug):
-    initialConnection(host, port, username, password, kexAlgorithm, hostKeyAlgorithm, cipherAlgorithm, debug)
+def getUserFromPasswd ():
+    output = runCMD("cat /etc/passwd")
+    for line in output.split('\n'):
+        fields = line.split(':')
+        if len(fields) >= 3 and fields[2] == "1000":
+            username = fields[0]
+            print(f"The username for user ID 1000 is '{username}'")
+
+def main(host, port, username, password, debug):
+    initialConnection(host, port, username, password, debug)
+    #runCMD("cat /etc/passwd")
+    getUserFromPasswd()
+    client.close()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Configure Cisco Catalyst Switches via Telnet and print Specs.')
@@ -94,12 +107,6 @@ if __name__ == '__main__':
                         help='the Username for SSH')
     parser.add_argument('--password', dest='password', default=defaultSettings["password"],
                         help='the Password for SSH')
-    parser.add_argument('--kex', dest='kexAlgorithm', default=defaultSettings["kexAlgorithm"],
-                        help='the ssh Key Exchange Algorithm')
-    parser.add_argument('--hostkey', dest='hostKeyAlgorithm', default=defaultSettings["hostKeyAlgorithm"],
-                        help='the ssh Host Key Algorithm')
-    parser.add_argument('--cipher', dest='cipherAlgorithm', default=defaultSettings["cipherAlgorithm"],
-                        help='the ssh Cipher Algorithm')
     parser.add_argument('--debug', action='store_true', default=defaultSettings["debug"],
                         help='Enable Debugging mode.')
     args = parser.parse_args()
@@ -122,9 +129,6 @@ if __name__ == '__main__':
         password = getpass.getpass("Enter password: ")
     else:
         password = args.password
-    kexAlgorithm = args.kexAlgorithm
-    hostKeyAlgorithm = args.hostKeyAlgorithm
-    cipherAlgorithm = args.cipherAlgorithm
     debug = args.debug
 
-    main(host, port, username, password, kexAlgorithm, hostKeyAlgorithm, cipherAlgorithm, debug)
+    main(host, port, username, password, debug)
