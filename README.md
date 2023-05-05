@@ -9,7 +9,7 @@ Telnet is not a secure protocol. All data is transmitted in clear text, includin
 ## Installation
 Clone this git repository.
 ```bash
-git clone https://github.com/LuisCane/catalyst-configurator.git
+git clone --branch telnet https://github.com/LuisCane/catalyst-configurator.git
 ```
 CD into the directory.
 ```bash
