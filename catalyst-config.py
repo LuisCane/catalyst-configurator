@@ -83,7 +83,7 @@ def initialConnection(host, port, username, password, debug):
 def sendCMD(cmd):
     channel.send(f"{cmd}")
     # Read the output and print it to the console
-    time.sleep(.5)
+    time.sleep(1)
     output = outputProc()
     print(output)
     return output
