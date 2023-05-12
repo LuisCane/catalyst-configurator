@@ -14,13 +14,13 @@ import paramiko
 global defaultSettings
 defaultSettings = {
         # Default host. String, IP address or Hostname
-        "host": "10.1.8.1",
+        "host": "",
         # Default Port. Integer
-        "port": 2001,
+        "port": 22,
         # Default Username. String
-        "username": "test",
+        "username": "",
         # Default Password. String
-        "password": "password123",
+        "password": "",
         # Default mode for skipping config. False will configure the switch. Boolean
         "config": False,
         # Default mode for Debug. Boolean
