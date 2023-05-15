@@ -374,6 +374,7 @@
         "management": "RJ45 Serial",
         "usb": "NA"
     },
+    
     "WS-C2960G-24PS-S": {
         "specTagModel": "WS-C2960G-24PS-S",
         "oneGigAccess": 24,
@@ -392,7 +393,29 @@
         "Storage": "32mb",
         "externalPower": true,
         "redundantPower": false,
-        "baseprice": "$0",
+        "baseprice": "$70",
+        "management": "RJ45 Serial",
+        "usb": "NA"
+    },
+    "WS-C2960G-8TC-L": {
+        "specTagModel": "WS-C2960G-8TC-L",
+        "oneGigAccess": 7,
+        "tenGigAccess": 0,
+        "oneGigUplink": 1,
+        "tenGigUplink": 0,
+        "OOBE": false,
+        "OOBE_Speed": null,
+        "modularStacking": false,
+        "fixedStacking": false,
+        "modularUplink": false,
+        "fixedUplink": true,
+        "powerOverEthernet": false,
+        "multiLayer": false,
+        "Memory": "64mb",
+        "Storage": "32mb",
+        "externalPower": true,
+        "redundantPower": false,
+        "baseprice": "$50",
         "management": "RJ45 Serial",
         "usb": "NA"
     },
