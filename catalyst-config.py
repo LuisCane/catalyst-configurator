@@ -11,21 +11,36 @@ import select
 import time
 import paramiko
 
-global defaultSettings
-defaultSettings = {
-        # Default host. String, IP address or Hostname
+def parse_arguments():
+    default_settings = {
         "host": "",
-        # Default Port. Integer
         "port": 22,
-        # Default Username. String
         "username": "",
-        # Default Password. String
         "password": "",
-        # Default mode for skipping config. False will configure the switch. Boolean
         "config": False,
-        # Default mode for Debug. Boolean
         "debug": False
     }
+
+    parser = argparse.ArgumentParser(description='Configure Cisco Catalyst Switches via Telnet and print Specs.')
+    parser.add_argument('--host', dest='host', default=default_settings["host"], help='the Hostname or IP address to connect to')
+    parser.add_argument('--port', dest='port', type=int, default=default_settings["port"], help='the TCP port to connect to')
+    parser.add_argument('--username', dest='username', default=default_settings["username"], help='the Username for SSH')
+    parser.add_argument('--password', dest='password', default=default_settings["password"], help='the Password for SSH')
+    parser.add_argument('--no-config', action='store_true', default=default_settings["config"], help='Skip Switch Config.')
+    parser.add_argument('--debug', action='store_true', default=default_settings["debug"], help='Enable Debugging mode.')
+    args = parser.parse_args()
+
+    if not args.host:
+        args.host = input("Enter host name or IP address: ")
+    if not args.port:
+        args.port = input("Enter port: ")
+    if not args.username:
+        args.username = input("Enter Username: ")
+    if not args.password:
+        args.password = getpass.getpass("Enter password: ")
+
+
+    return args
 
 # Set user mode
 userMode = "userExec"
@@ -776,40 +791,5 @@ def main(host, port, username, password, no_config, debug):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Configure Cisco Catalyst Switches via Telnet and print Specs.')
-    parser.add_argument('--host', dest='host', default=defaultSettings["host"],
-                        help='the Hostname or IP address to connect to')
-    parser.add_argument('--port', dest='port', type=int, default=defaultSettings["port"],
-                        help='the TCP port to connect to')
-    parser.add_argument('--username', dest='username', default=defaultSettings["username"],
-                        help='the Username for SSH')
-    parser.add_argument('--password', dest='password', default=defaultSettings["password"],
-                        help='the Password for SSH')
-    parser.add_argument('--no-config', action='store_true', default=defaultSettings["config"],
-                        help='Skip Switch Config.')
-    parser.add_argument('--debug', action='store_true', default=defaultSettings["debug"],
-                        help='Enable Debugging mode.')
-    args = parser.parse_args()
-
-    # Prompt User for host if none is supplied by arguments or config.json
-    if not args.host:
-        host = input("Enter host name or IP address: ")
-    else:
-        host = args.host
-    # Prompt User for Port number if none is supplied by arguments or config.json
-    if not args.port:
-        port = input("Enter port: ")
-    else:
-        port = args.port
-    if not args.username:
-        username = input("Enter Username: ")
-    else:
-        username = args.username
-    if not args.password:
-        password = getpass.getpass("Enter password: ")
-    else:
-        password = args.password
-    no_config = args.no_config
-    debug = args.debug
-
-    main(host, port, username, password, no_config, debug)
+    args = parse_arguments()
+    main(args.host, args.port, args.username, args.password, args.sshkey, args.no_config, args.debug)
