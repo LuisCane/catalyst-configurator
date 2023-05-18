@@ -14,7 +14,7 @@ import paramiko
 def parse_arguments():
     default_settings = {
         "host": "",
-        "port": 22,
+        "port": "",
         "username": "",
         "password": "",
         "config": False,
@@ -23,7 +23,7 @@ def parse_arguments():
 
     parser = argparse.ArgumentParser(description='Configure Cisco Catalyst Switches via Telnet and print Specs.')
     parser.add_argument('--host', dest='host', default=default_settings["host"], help='the Hostname or IP address to connect to')
-    parser.add_argument('--port', dest='port', type=int, default=default_settings["port"], help='the TCP port to connect to')
+    parser.add_argument('--port', dest='port', default=default_settings["port"], help='the TCP port to connect to')
     parser.add_argument('--username', dest='username', default=default_settings["username"], help='the Username for SSH')
     parser.add_argument('--password', dest='password', default=default_settings["password"], help='the Password for SSH')
     parser.add_argument('--no-config', action='store_true', default=default_settings["config"], help='Skip Switch Config.')
@@ -173,20 +173,16 @@ def waitForBoot(debug):
         input("Press Enter to Continue.")
     print("User mode is: ", userMode)
 
-def getSwitchModel(debug):
+def getSwitchModel(showVersion, debug):
     debugMode(debug)
     global switchModel
-    # Enter show version command and advance through the pages
-    output = sendCMD("show version\r")
-    output += sendCMD(" ")
-    output += sendCMD(" ")
-    modelMatch = re.search(r"WS-C\D?\d{4}\D?\D?-\d{1,2}\D?\D\D?-?\D?\D?$", output, re.MULTILINE)
+    modelMatch = re.search(r"WS-C\D?\d{4}\D?\D?-\d{1,2}\D?\D\D?-?\D?\D?$",showVersion, re.MULTILINE)
     if modelMatch:
         switchModel = modelMatch.group(0).strip()
         print("Switch Model: ", switchModel)
         return switchModel
     else:
-        modelMatch = re.search(r"WS-C\D?\d{4}\D?\D?-\d{1,2}\D?\D\w?-?\w?", output, re.MULTILINE)
+        modelMatch = re.search(r"WS-C\D?\d{4}\D?\D?-\d{1,2}\D?\D\w?-?\w?",showVersion, re.MULTILINE)
         if modelMatch:
             switchModel = modelMatch.group(0).strip()
             print("Switch Model: ", switchModel)
@@ -196,23 +192,18 @@ def getSwitchModel(debug):
             print("Switch Model: ", switchModel)
             return switchModel
 
-def getSwitchIOS(debug):
+def getSwitchIOS(showVersion, debug):
     debugMode(debug)
     global switchIOS
-    # Enter show version command and advance through the pages
-    output = sendCMD("show version\r")
-    output += sendCMD(" ")
-    output += sendCMD(" ")
-    output += sendCMD(" ")
-    isIOSXEMatch = re.search(r"(IOS-XE)", output, re.MULTILINE)
+    isIOSXEMatch = re.search(r"(IOS-XE)",showVersion, re.MULTILINE)
     if isIOSXEMatch:
         isIOSXE = True
     else:
         isIOSXE = False
     if isIOSXE:
-        osImageMatch = re.search(r"Catalyst\sL3\sSwitch\sSoftware\s\W(\w+-\w+-M)\W,\sVersion\s(\d+.\d+.\d+\w+).?\sRELEASE\sSOFTWARE", output, re.MULTILINE)
+        osImageMatch = re.search(r"Catalyst\sL3\sSwitch\sSoftware\s\W(\w+-\w+-M)\W,\sVersion\s(\d+.\d+.\d+\w+).?\sRELEASE\sSOFTWARE", showVersion, re.MULTILINE)
     else:
-        osImageMatch = re.search(r"Software\s\W(C\D?\d{4}\w?-\w+-\w)\W,\sVersion\s+(\d+\.\d+)\W\d?\d?\W\w+,", output, re.MULTILINE)
+        osImageMatch = re.search(r"Software\s\W(C\D?\d{4}\w?-\w+-\w)\W,\sVersion\s+(\d+\.\d+)\W\d?\d?\W\w+,",showVersion, re.MULTILINE)
     if osImageMatch:
         switchImage = osImageMatch.group(1).strip()
     else:
@@ -268,7 +259,16 @@ def get_module_attributes(model):
 
     return device_dict.get("modules", {}).get(model, {})
 
-def getSwitchInventory(debug):
+def getShowVersion(debug):
+    debugMode(debug)
+    output = sendCMD("show version\r")
+    output += sendCMD(" ")
+    output += sendCMD(" ")
+    output += sendCMD(" ")
+    output += sendCMD("\r")
+    return output
+
+def getShowInventory(debug):
     debugMode(debug)
     output = sendCMD("show inventory\r")
     output += sendCMD(" ")
@@ -277,10 +277,13 @@ def getSwitchInventory(debug):
 
 def collectSwitchInfo(debug):
     debugMode(debug)
+    showVersion = getShowVersion(debug)
+    global showInventory
+    showInventory = getShowInventory(debug)
     global switchModel
-    switchModel = getSwitchModel(debug)
+    switchModel = getSwitchModel(showVersion, debug)
     global switchIOS
-    switchIOS = getSwitchIOS(debug)
+    switchIOS = getSwitchIOS(showVersion, debug)
     attributesSwitch = get_switch_attributes(switchModel)
     if not attributesSwitch:
         print(f"Switch Model not in the dictionary file. Please add this model, {switchModel}, to the device-dict.json file.")
@@ -364,8 +367,7 @@ def collectModuleInfo(debug):
         else:
             moduleCT = 1
         print("Switch has Modular Uplink Feature.")
-        switchInventory = getSwitchInventory(debug)
-        print(switchInventory)
+        print(showInventory)
         installedUplinkMod1 = input("If a module is installed, enter the model here or press Enter for none: ").strip()
         if installedUplinkMod1 in [""]:
             installedUplinkMod1 = "none"
@@ -390,8 +392,7 @@ def collectModuleInfo(debug):
                 tenGigPorts += attributesModule.get('tenGigPorts')
     if modularStacking:
         print("Switch has Modular Stacking Feature.")
-        switchInventory = getSwitchInventory(debug)
-        print(switchInventory)
+        print(showInventory)
         installedStackMod = input("If a module is installed, enter the model here or press Enter for none: ").strip()
         if installedStackMod in [""]:
             installedStackMod = "none"
@@ -459,8 +460,17 @@ def configure_switch(debug):
 
     # Configure stacking switches with fixed uplink ports.
     if stackingSwitch and fixedUplink:
+        if tenGigAccess == 0 and tenGigUplink == 0 and ("3650" in switchModel):
+            access_ports = (oneGigAccess)
+            uplink_access_ports = (oneGigUplink - 1)
+            uplink_port = (oneGigUplink)
+            
+            # Generate the interface range command for stacking switches
+            interface_access = f"interface range g1/0/1-{access_ports} ,g1/1/1-{uplink_access_ports}\r"
+            interface_uplink = f"interface g1/1/{uplink_port}\r"
+
         # Configure gigabit stacking switches with fixed gigabit uplink ports.
-        if tenGigAccess == 0 and tenGigUplink == 0:
+        elif tenGigAccess == 0 and tenGigUplink == 0:
             access_ports = (oneGigAccess + (oneGigUplink - 1))
             uplink_port = (access_ports + 1)
             
@@ -792,4 +802,4 @@ def main(host, port, username, password, no_config, debug):
 
 if __name__ == '__main__':
     args = parse_arguments()
-    main(args.host, args.port, args.username, args.password, args.sshkey, args.no_config, args.debug)
+    main(args.host, args.port, args.username, args.password, args.no_config, args.debug)

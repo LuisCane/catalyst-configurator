@@ -462,6 +462,28 @@
         "management": "RJ45 Serial + OOBE",
         "usb": "USB2"
     },
+    "WS-C3650-48PS": {
+        "specTagModel": "WS-C3650-48FS-S",
+        "oneGigAccess": 48,
+        "tenGigAccess": 0,
+        "oneGigUplink": 4,
+        "tenGigUplink": 0,
+        "OOBE": true,
+        "OOBE_Speed": "ge",
+        "modularStacking": true,
+        "fixedStacking": false,
+        "modularUplink": false,
+        "fixedUplink": true,
+        "powerOverEthernet": true,
+        "multiLayer": true,
+        "Memory": "4096mb",
+        "Storage": "1536mb",
+        "externalPower": false,
+        "redundantPower": true,
+        "baseprice": "$130",
+        "management": "RJ45 Serial + OOBE",
+        "usb": "USB2"
+    },
     "WS-C3850-48P": {
         "specTagModel": "WS-C3850-48F-S",
         "oneGigAccess": 48,
@@ -578,6 +600,14 @@
         "tenGigPorts": 0,
         "stackPorts": 2,
         "modulePrice": "$50"
+    },
+    "C3650-STACK": {
+        "moduleType": "stack",
+        "forSeries": "C3650",
+        "oneGigPorts": 0,
+        "tenGigPorts": 0,
+        "stackPorts": 1,
+        "modulePrice": "$25"
     },
     "C3850-NM-2-10G": {
         "moduleType": "uplink",
