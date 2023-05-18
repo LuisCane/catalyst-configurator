@@ -5,27 +5,47 @@ import argparse
 import getpass
 import inspect
 import json
+import logging
 import os
 import re
 import select
 import time
 import paramiko
 
-global defaultSettings
-defaultSettings = {
-        # Default host. String, IP address or Hostname
-        "host": "",
-        # Default Port. Integer
-        "port": 22,
-        # Default Username. String
-        "username": "",
-        # Default Password. String
-        "password": "",
-        # Default mode for skipping config. False will configure the switch. Boolean
-        "config": False,
-        # Default mode for Debug. Boolean
-        "debug": False
+def parse_arguments():
+    #Default settings
+    default_settings = {
+        "host": "nr-rt.comprenew.arpa",
+        "port": 2001,
+        "username": "script",
+        "password": "32453245",
+        "sshkey": "",
+        "config": True,
+        "debug": True
     }
+
+    parser = argparse.ArgumentParser(description='Configure Cisco Catalyst Switches via SSH and print Specs.')
+    parser.add_argument('--host', dest='host', default=default_settings["host"], help='the Hostname or IP address to connect to')
+    parser.add_argument('--port', dest='port', type=int, default=default_settings["port"], help='the TCP port to connect to')
+    parser.add_argument('--username', dest='username', default=default_settings["username"], help='the Username for SSH')
+    parser.add_argument('--password', dest='password', default=default_settings["password"], help='the Password for SSH')
+    parser.add_argument('--ssh-key', dest='sshkey', default=default_settings["sshkey"], help='Full path to SSH key')
+    parser.add_argument('--no-config', action='store_true', default=default_settings["config"], help='Skip Switch Config.')
+    parser.add_argument('--debug', action='store_true', default=default_settings["debug"], help='Enable Debugging mode.')
+    args = parser.parse_args()
+
+    if not args.host:
+        args.host = input("Enter host name or IP address: ")
+    if not args.port:
+        args.port = input("Enter port: ")
+    if not args.username:
+        args.username = input("Enter Username: ")
+    if not args.password and not args.sshkey:
+        args.password = getpass.getpass("Enter password: ")
+    if not args.sshkey and args.password:
+        args.sshkey = input("Enter full path to SSH Key file (leave blank for password authentication): ")
+
+    return args
 
 # Set user mode
 userMode = "userExec"
@@ -49,36 +69,68 @@ def ask_yes_no(prompt):
         else:
             print("Invalid response. Please answer yes or no.")
 
-def initialConnection(host, port, username, password, debug):
+def initialConnection(host, port, username, password, sshkey, debug):
     debugMode(debug)
-    # Connect to the AS
+    if debug:
+        # Enable verbose output for paramiko
+        logging.basicConfig(level=logging.DEBUG)
+
     global ssh
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    
-    try:
-        ssh.connect(
-            hostname = host,
-            port = port,
-            username = username,
-            password = password,
-            timeout = 10,
-            look_for_keys = False,
-            allow_agent = False
-        )
-        print(f"Successfully connected to {host}.")
-        global channel
-        channel = ssh.invoke_shell()
 
-    except paramiko.BadHostKeyException:
-        print(f"Bad Host Key Exception.")
-        exit()
-    except paramiko.AuthenticationException:
-        print(f"Authentication failed when connecting to {host}.")
-        exit()
-    except:
-        print(f"Could not connect to {host}.")
-        exit()
+    if sshkey:
+        try:
+            private_key = paramiko.RSAKey.from_private_key_file(sshkey, password=None)
+            transport = ssh.get_transport()
+            transport.set_algorithms(look_for_keys=False, allow_agent=False, pubkey_algs=['ssh-rsa'])
+            ssh.connect(
+                hostname=host,
+                port=port,
+                username=username,
+                pkey=private_key,
+                timeout=10,
+                look_for_keys=False,
+                allow_agent=False
+            )
+            print(f"Successfully connected to {host} using SSH key authentication.")
+            
+        except IOError:
+            print(f"IO Error")
+            exit()
+        except paramiko.PasswordRequiredException:
+            print(f'Password Required')
+            exit()
+        except paramiko.SSHException:
+            print(f"Key file is invalid.")
+            exit()
+        except:
+            print(f"Could not connect to {host} using SSH key authentication.")
+            exit()
+    else:
+        try:
+            ssh.connect(
+                hostname=host,
+                port=port,
+                username=username,
+                password=password,
+                timeout=10,
+                look_for_keys=False,
+                allow_agent=False
+            )
+            print(f"Successfully connected to {host} using password authentication.")
+
+        except paramiko.BadHostKeyException:
+            print(f"Bad Host Key Exception.")
+            exit()
+        except paramiko.AuthenticationException:
+            print(f"Authentication failed when connecting to {host}.")
+            exit()
+        except:
+            print(f"Could not connect to {host} using password authentication.")
+            exit()
+    global channel
+    channel = ssh.invoke_shell()
 
 def sendCMD(cmd):
     channel.send(f"{cmd}")
@@ -748,8 +800,8 @@ def closeConnection(debug):
     print("Connection Closed")
 
 
-def main(host, port, username, password, no_config, debug):
-    initialConnection(host, port, username, password, debug)
+def main(host, port, username, password,sshkey, no_config, debug):
+    initialConnection(host, port, username, password,sshkey, debug)
     waitForBoot(debug)
     collectSwitchInfo(debug)
     if modularSwitch:
@@ -776,40 +828,5 @@ def main(host, port, username, password, no_config, debug):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Configure Cisco Catalyst Switches via Telnet and print Specs.')
-    parser.add_argument('--host', dest='host', default=defaultSettings["host"],
-                        help='the Hostname or IP address to connect to')
-    parser.add_argument('--port', dest='port', type=int, default=defaultSettings["port"],
-                        help='the TCP port to connect to')
-    parser.add_argument('--username', dest='username', default=defaultSettings["username"],
-                        help='the Username for SSH')
-    parser.add_argument('--password', dest='password', default=defaultSettings["password"],
-                        help='the Password for SSH')
-    parser.add_argument('--no-config', action='store_true', default=defaultSettings["config"],
-                        help='Skip Switch Config.')
-    parser.add_argument('--debug', action='store_true', default=defaultSettings["debug"],
-                        help='Enable Debugging mode.')
-    args = parser.parse_args()
-
-    # Prompt User for host if none is supplied by arguments or config.json
-    if not args.host:
-        host = input("Enter host name or IP address: ")
-    else:
-        host = args.host
-    # Prompt User for Port number if none is supplied by arguments or config.json
-    if not args.port:
-        port = input("Enter port: ")
-    else:
-        port = args.port
-    if not args.username:
-        username = input("Enter Username: ")
-    else:
-        username = args.username
-    if not args.password:
-        password = getpass.getpass("Enter password: ")
-    else:
-        password = args.password
-    no_config = args.no_config
-    debug = args.debug
-
-    main(host, port, username, password, no_config, debug)
+    args = parse_arguments()
+    main(args.host, args.port, args.username, args.password,args.sshkey, args.no_config, args.debug)
