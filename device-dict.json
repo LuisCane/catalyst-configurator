@@ -264,6 +264,28 @@
         "management": "RJ45 Serial",
         "usb": "NA"
     },
+    "WS-C3560G-48PS-E": {
+        "specTagModel": "WS-C3560G-48PS-E",
+        "oneGigAccess": 48,
+        "tenGigAccess": 0,
+        "oneGigUplink": 4,
+        "tenGigUplink": 0,
+        "OOBE": false,
+        "OOBE_Speed": null,
+        "modularStacking": false,
+        "fixedStacking": false,
+        "modularUplink": false,
+        "fixedUplink": true,
+        "powerOverEthernet": true,
+        "multiLayer": true,
+        "Memory": "128mb",
+        "Storage": "32mb",
+        "externalPower": true,
+        "redundantPower": false,
+        "baseprice": "$95",
+        "management": "RJ45 Serial",
+        "usb": "NA"
+    },
     "WS-C3560G-48TS-S": {
         "specTagModel": "WS-C3560G-48TS-S",
         "oneGigAccess": 48,
